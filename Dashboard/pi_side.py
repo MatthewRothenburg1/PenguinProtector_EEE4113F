@@ -6,7 +6,7 @@ import time
 #with open("Venice_10.mp4", "rb") as f:
 #    response = requests.post("http://localhost:8080/upload_video", files={"file": f})
 #    print(response.json())
-
+#sdskgjhsdgkhdsg
 
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app/upload_frame"
 SERVER_URL = "http://localhost:8080/upload_frame"

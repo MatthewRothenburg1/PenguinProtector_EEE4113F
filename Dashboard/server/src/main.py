@@ -11,26 +11,38 @@
 ##################################################################
 #This was designed for the EEE4113F course at the University of Cape Town.
 
-from fastapi import FastAPI, UploadFile, File, Request
+
+#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app/upload_frame"
+
+from fastapi import FastAPI, UploadFile, File, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.templating import Jinja2Templates # type: ignore
 
 from io import BytesIO
 import time
 
 from google.cloud import vision
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
+from google.oauth2 import service_account # type: ignore
+from googleapiclient.discovery import build # type: ignore
+from googleapiclient.http import MediaIoBaseUpload # type: ignore
 from mimetypes import guess_type
-
+import requests
+import firebase_admin
+from firebase_admin import credentials, firestore, db
+from telegram import Bot # type: ignore
 # Create a FastAPI application instance
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 #Frame buffer for the latest image
 latest_frame = BytesIO()
+GOOGLE_CLOUD_PROJECT_ID = 'design-dashboard-eee4113f' # type: ignore
 
+TELEGRAM_TOKEN = '7713440185:AAEeLw8dRbzNgN3hsFGvqnZVi_wkgR6f_tM'
+bot = Bot(token = TELEGRAM_TOKEN)
+CHAT_ID = '7941423246'
+# Telegram API URL for sending a message
+telegram_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
 
 ###############################################################################################
 # Google API Stuff
@@ -39,13 +51,23 @@ latest_frame = BytesIO()
 # Service account credentials
 creds = service_account.Credentials.from_service_account_file(
     'design-dashboard-eee4113f-0fab4abb4b04.json',
-    scopes=['https://www.googleapis.com/auth/cloud-platform']
+    scopes=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/cloud-platform']  # Correct scope for Drive access
 )
+creds2 = credentials.Certificate('design-dashboard-eee4113f-0fab4abb4b04.json')
+
+firebase_admin.initialize_app(creds2, {
+    'databaseURL': 'https://design-dashboard-eee4113f-default-rtdb.firebaseio.com'
+})
+
+# Now you can access the database
 
 # Build Google API service clients
 drive_service = build('drive', 'v3', credentials=creds)
 sheets_service = build('sheets', 'v4', credentials=creds)
 vision_client = vision.ImageAnnotatorClient(credentials=creds)
+
+
+
 
 
 # Folder ID for Google Drive
@@ -85,43 +107,16 @@ def upload_video_to_drive(file_stream, filename, mimetype):
     return uploaded_file.get('id')
 
 def upload_image_to_vision(file_stream):
-    # Reset stream position to the beginning
-    file_stream.seek(0)
     
     # Read image content
     content = file_stream.read()
     image = vision.Image(content=content)
 
     response = vision_client.object_localization(image=image)
+    # Access the localized_object_annotations properly using dot notation
     objects = response.localized_object_annotations
 
-    # Parse and return the results
-    results = []
-    results.append({
-            "description": objects[0].name,
-            "score": objects[0].score
-        })
-
-    return results
-
-
-# Upload data to Google Sheets (Placeholder)
-def upload_data_to_sheets(data):
-    return None
-
-
-###############################################################################################
-# FastAPI Routes
-###############################################################################################
-
-@app.post("/upload_frame")
-async def upload_frame(file: UploadFile = File(...)):
-    global latest_frame
-    latest_frame = BytesIO(await file.read())
-    latest_frame.seek(0)
-    print(upload_image_to_vision(latest_frame))
-    return {"message": "Frame received"}
-
+    return objects
 
 def generate_from_memory():
     global latest_frame
@@ -133,6 +128,121 @@ def generate_from_memory():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
             )
         time.sleep(0.1)
+
+def get_detection_state():
+    ref = db.reference('/DetectionState')
+    state = ref.get()
+    if (state):
+        ref.set(False)
+        return True
+    elif (not state):
+        return False
+    else:
+        return
+    
+def get_streaming_state():
+    ref = db.reference('/StreamingState')
+    return ref.get()
+
+def set_streaming_state(x):
+    ref = db.reference('/StreamingState')
+    ref.set(x)
+
+def evaluate_vision_response(response):
+    # Placeholder for evaluating the vision response
+    # You can implement your logic here based on the response from Google Vision API
+    for obj in response:
+        # Check if the object is 'Person' and if the score is greater than 0.5
+        if obj.name == 'Person' and obj.score > 0.5:
+            return True
+    # If no matching 'Person' with score > 0.5, return False
+    return False
+
+def on_detection(file_bytes: BytesIO):
+    # Upload the image to Google Drive
+    mimetype = 'image/jpeg'  # Adjust based on your image type
+    upload_to_drive(file_bytes, 'detected_image.jpg', mimetype)
+    # Send Telegram notification (Placeholder)
+    send_photo_to_user(file_bytes, "Person detected!")
+    return
+
+
+def send_message_to_user(message):
+    data = {
+        'chat_id': CHAT_ID,
+        'text': message
+    }
+
+    response = requests.post(telegram_url, data=data)
+
+    if response.status_code == 200:
+        print("Message sent successfully!")
+    else:
+        print(f"Failed to send message: {response.status_code}, {response.text}")
+
+def send_photo_to_user(photo: BytesIO, caption: str = ''):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    photo.seek(0)
+    files = {'photo': photo}
+    data = {'chat_id': CHAT_ID, 'caption': caption}
+    
+    response = requests.post(url, files=files, data=data)
+    
+    if response.status_code == 200:
+        print("Photo sent successfully!")
+    else:
+        print(f"Failed to send photo. Error: {response.text}")
+
+# Upload data to Google Sheets (Placeholder)
+def upload_data_to_sheets(data):
+    return None
+
+
+###############################################################################################
+# FastAPI Routes
+###############################################################################################
+
+@app.get("/detection_state")
+def get_detect():
+    return get_detection_state()
+
+@app.post("/upload_to_vision")
+async def upload_to_vision(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
+    file_bytes = BytesIO(file.file.read())
+    
+    try:
+        # Simulate uploading the image to Vision API
+        response = upload_image_to_vision(file_bytes)
+        
+        # Evaluate the response to check for a detected person
+        results = evaluate_vision_response(response)
+        
+        # If a person is detected, start the background task
+        if results and background_tasks:
+            background_tasks.add_task(on_detection, file_bytes)
+        
+        # Return the results of the detection check
+        return {"person_detected": results}
+    
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/get_streaming_state")
+def get_detect():
+    return get_streaming_state()
+
+@app.post("/set_streaming_state")
+def set_streaming_state_endpoint(value: bool = Query(...)):
+    return set_streaming_state(value)
+
+
+@app.post("/upload_to_stream")
+async def upload_to_stream(file: UploadFile = File(...)):
+    global latest_frame
+    latest_frame = BytesIO(await file.read())
+    latest_frame.seek(0)
+    
 
 @app.get("/video_feed")
 def video_feed():

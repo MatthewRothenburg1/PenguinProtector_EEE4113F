@@ -1,0 +1,99 @@
+/* General Layout */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #eef2f5;
+  color: #333;
+}
+
+/* Header */
+header {
+  background-color: #2b6777;
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+/* Card Styles */
+.card {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+}
+
+/* Wide Cards */
+.card.wide {
+  grid-column: 1 / -1;
+}
+
+/* Inputs & Selects */
+input[type="time"],
+select {
+  display: block;
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+  border: 1px solid #ccc;
+}
+
+/* Button */
+button {
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  background-color: #2b6777;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #3a8b9e;
+}
+
+/* Livestream */
+.video-container {
+  margin-top: 1rem;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #000;
+}
+
+.video-container img {
+  width: 100%;
+  display: block;
+}
+
+/* Analytics section layout */
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.false-detection {
+  font-size: 1rem;
+  color: #444;
+}

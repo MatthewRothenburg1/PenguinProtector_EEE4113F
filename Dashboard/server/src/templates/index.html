@@ -1,12 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Penguin Protector</title>
+  <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-    <h1>Fuck the honey badgers</h1>
+  <header>
+    <h1>🐧 Penguin Protector</h1>
+  </header>
+
+  <main class="grid">
+    <!-- Row 1: Sleep/Wake & Last Interaction -->
+    <section class="card">
+      <h2>Sleep & Wake Settings</h2>
+      <label for="sleep-time">Sleep Time:</label>
+      <input type="time" id="sleep-time" name="sleep-time">
+
+      <label for="wake-time">Wake Time:</label>
+      <input type="time" id="wake-time" name="wake-time">
+    </section>
+
+    <section class="card">
+      <h2>Last Server Interaction</h2>
+      <p id="last-interaction">2025-05-14 12:34:56</p>
+    </section>
+
+    <!-- Row 2: Analytics + False Detection (Full Width) -->
+    <section class="card wide">
+      <h2>Detection Analytics & False Detection Rate</h2>
+
+      <div class="analytics-header">
+        <label for="analytics-range">View by:</label>
+        <select id="analytics-range">
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+
+        <div class="false-detection">
+          <strong>False Detections:</strong> <span id="false-detection">2.5%</span>
+        </div>
+      </div>
+
+      <canvas id="analyticsChart" width="100%" height="60"></canvas>
+    </section>
+
+    <!-- Row 3: Livestream (Full Width) -->
+    <section class="card wide">
+      <h2>Live Stream</h2>
+      <button onclick="startLivestream()">Start Livestream</button>
+      <div class="video-container">
+        <img id="livestream" src="" alt="Livestream will appear here">
+      </div>
+    </section>
+  </main>
+
+  <!-- Optional JS for stream -->
+  <script>
+    function startLivestream() {
+      document.getElementById("livestream").src = "/video_feed";
+    }
+  </script>
 </body>
 </html>

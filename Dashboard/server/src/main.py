@@ -17,6 +17,7 @@
 from fastapi import FastAPI, UploadFile, File, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates # type: ignore
+from fastapi.staticfiles import StaticFiles
 
 from io import BytesIO
 import time
@@ -32,6 +33,7 @@ from firebase_admin import credentials, firestore, db
 from telegram import Bot # type: ignore
 # Create a FastAPI application instance
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 #Frame buffer for the latest image

@@ -1,53 +1,88 @@
 import cv2
 import requests
 from io import BytesIO
+import uuid
 import time
 
 # URL of the FastAPI endpoint
-url = "http://localhost:8080/upload_to_vision"  # Adjust if needed
+url = "http://localhost:8080"  # Adjust if needed
 #url = "https://flask-fire-837838013707.africa-south1.run.app/upload_to_vision"  # Adjust if needed
 
+# === Configuration ===
+SERVER_URL = url
+IMAGE_CAPTURE_PATH = "capture.jpg"
+VIDEO_CAPTURE_PATH = "video.mp4"
+DETERRENT_TYPE = "sound"  # Change as needed
 
-# Set up the webcam capture
-cap = cv2.VideoCapture(0)  # Use 0 for the default webcam
-
-if not cap.isOpened():
-    raise Exception("Could not open webcam")
-
-# Function to capture and send an image from the webcam
-def capture_and_upload():
-    # Capture one frame from the webcam
+# === Step 1: Capture Image ===
+def capture_image(path):
+    cap = cv2.VideoCapture(0)
+    time.sleep(2)  # Let camera warm up
     ret, frame = cap.read()
-    
-    if not ret:
-        print("Failed to capture image")
-        return
+    if ret:
+        cv2.imwrite(path, frame)
+    cap.release()
+    return ret
 
-    # Encode the image as JPEG in memory (no need to save to disk)
-    _, img_encoded = cv2.imencode('.jpg', frame)
-    img_bytes = img_encoded.tobytes()
+# === Step 2: Upload Image ===
+def upload_image(path):
+    with open(path, 'rb') as f:
+        response = requests.post(
+            f"{SERVER_URL}/upload_to_vision",
+            files={"file": f}
+        )
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Image upload failed:", response.text)
+        return None
 
-    # Send the image to the FastAPI endpoint
-    files = {"file": ("webcam_image.jpg", BytesIO(img_bytes), "image/jpeg")}
-    try:
-        response = requests.post(url, files=files)
-        if response.status_code == 200:
-            print("Image uploaded successfully.")
-            print(response.json())  # Print any response from the server
+# === Step 3: Record Video ===
+def record_video(path, duration=5, fps=20):
+    cap = cv2.VideoCapture(0)
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(path, fourcc, fps, (width, height))
+
+    start_time = time.time()
+    while (time.time() - start_time) < duration:
+        ret, frame = cap.read()
+        if ret:
+            out.write(frame)
         else:
-            print(f"Failed to upload image: {response.status_code}")
-            print(response.text)
-    except Exception as e:
-        print(f"Error occurred while uploading image: {str(e)}")
+            break
+    cap.release()
+    out.release()
 
-# Continuously capture and upload images
-capture_and_upload()
+# === Step 4: Upload Video ===
+def upload_video(path, ID, deterrent):
+    with open(path, 'rb') as f:
+        response = requests.post(
+            f"{SERVER_URL}/upload_video",
+            data={"ID": ID, "deterrent": deterrent},
+            files={"file": f}
+        )
+    if response.status_code == 200:
+        print("Video uploaded successfully:", response.json())
+    else:
+        print("Video upload failed:", response.text)
 
-# Optionally, display the webcam feed
+# === Main Flow ===
+if __name__ == "__main__":
+    print("Capturing image...")
+    if capture_image(IMAGE_CAPTURE_PATH):
+        print("Uploading image...")
+        result = upload_image(IMAGE_CAPTURE_PATH)
 
-
-# Stop capturing when the user presses 'q'
-
-# Release resources
-cap.release()
-cv2.destroyAllWindows()
+        if result and result.get("detection"):
+            ID = result.get("ID")
+            print(f"Detection confirmed! ID: {ID}")
+            print("Recording video...")
+            record_video(VIDEO_CAPTURE_PATH)
+            print("Uploading video...")
+            upload_video(VIDEO_CAPTURE_PATH, ID, DETERRENT_TYPE)
+        else:
+            print("No detection or failed upload.")
+    else:
+        print("Image capture failed.")

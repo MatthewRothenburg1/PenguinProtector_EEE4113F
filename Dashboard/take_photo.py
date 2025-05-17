@@ -60,21 +60,14 @@ def handle_motion():
     with camera_lock:
         picam2 = Picamera2()
         picam2.start()
-        time.sleep(2)  # Warm-up
+        time.sleep(1.5)  # Warm-up
 
         # Capture photo
         image_path = "/tmp/capture.jpg"
         picam2.capture_file(image_path)
 
-        # Record 10-second video
-        video_path = "/tmp/motion_video.h264"
-        picam2.start_recording(video_path)
-        time.sleep(10)
-        picam2.stop_recording()
-        picam2.close()
-
-    # Upload image
-    result = upload_image(image_path)
+    # Upload image and get result
+    result = upload_image(io.BytesIO(open(image_path, "rb").read()))
 
     if result and "ID" in result:
         response_id = result["ID"]
@@ -83,13 +76,22 @@ def handle_motion():
         if result.get("detected") == True:
             deterrent()
             triggered = "true"
+
+            # Record video only if animal was detected
+            with camera_lock:
+                video_path = "/tmp/motion_video.h264"
+                picam2.start()
+                picam2.start_recording(video_path)
+                time.sleep(10)
+                picam2.stop_recording()
+                picam2.close()
+
+            # Upload video
+            upload_video(video_path, response_id, triggered)
         else:
-            print("No animal detected. Starting 10 second cooldown...")
+            print("No animal detected. Skipping video. Starting cooldown...")
             triggered = "false"
             time.sleep(debounce_seconds)
-
-        # Upload video
-        upload_video(video_path, response_id, triggered)
 
     else:
         print("Skipping video upload due to failed image upload.")

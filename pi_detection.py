@@ -44,7 +44,19 @@ def update_Oled(text):
     thread.daemon = True
     thread.start()
 
-
+def test_server_connection():
+    try:
+        response = requests.get(f"{SERVER_URL}/ping")  # Adjust to a known lightweight route
+        if response.status_code == 200:
+            print("Connected to server.")
+            update_Oled("Connected to server")
+        else:
+            print("Server responded, but with error status.")
+            update_Oled("Server Error")
+    except requests.RequestException as e:
+        print("Could not connect to server:", e)
+        update_Oled("Server Unreachable")
+test_server_connection()
 
 # === Deterrent Stub ===
 def deterrent():
@@ -158,9 +170,9 @@ def upload_video(path, ID, triggered):
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIR_PIN, GPIO.IN)
 
-time.sleep(2)
+time.sleep(0.5)
 
-#GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=motion_detected, bouncetime=200)
+GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=motion_detected, bouncetime=200)
 
 print("System ready. Waiting for motion...")
 

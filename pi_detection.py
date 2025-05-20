@@ -1,0 +1,196 @@
+from picamera2 import Picamera2
+from picamera2.encoders import H264Encoder
+from picamera2.outputs import FileOutput
+import RPi.GPIO as GPIO
+import requests
+import io
+import time
+import cv2
+import subprocess
+import psutil
+import threading
+from luma.core.interface.serial import i2c
+from luma.oled.device import ssd1306
+from PIL import Image, ImageDraw, ImageFont
+import socket
+# === Configuration ===
+PIR_PIN = 22
+#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
+
+# Initialize the I2C connection to the OLED
+serial = i2c(port=1, address=0x3C)
+device = ssd1306(serial)
+
+debounce_seconds = 10
+dispText = "Screen Functional"
+# Initialize the I2C connection to the OLED
+def clear_oled():
+    blank_image = Image.new("1", device.size)
+    device.display(blank_image)
+
+def init_Oled(text):
+    image = Image.new("1", device.size)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+    draw.text((10, 10), text, font=font, fill=255)
+    device.display(image)
+
+    time.sleep(5)
+    clear_oled()
+
+def update_Oled(text):
+    thread = threading.Thread(target=init_Oled, args=(text,))
+    thread.daemon = True
+    thread.start()
+
+
+
+# === Deterrent Stub ===
+def deterrent():
+    print("Deterrent triggered!")
+
+#Take photo
+def take_photo():
+    # Capture photo
+    frame = picam2.capture_array()
+    return frame
+
+# === Upload Image ===
+def upload_image(frame):
+    _, jpeg = cv2.imencode(".jpg", frame)
+    image_bytes_io = io.BytesIO(jpeg.tobytes())
+    response = requests.post(
+        f"{SERVER_URL}/upload_to_vision",
+        files={"file": ("photo.jpg", image_bytes_io.getvalue(), "image/jpeg")}
+    )
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Image upload failed:", response.text)
+        return None
+
+
+def fetchStreamState():
+    try:
+        response = requests.get(f"{SERVER_URL}/get_streaming_state")
+        if response.status_code == 200:
+            data = response.json()
+            print("Streaming state:", data)
+        else:
+            print(f"Failed to get data. Status code: {response.status_code}")
+    except requests.RequestException as e:
+        print("Error:", e)
+    return data
+
+def uploadToStream(frame):
+    _, jpeg = cv2.imencode(".jpg", frame)
+    image_bytes_io = io.BytesIO(jpeg.tobytes())
+    response = requests.post(
+        f"{SERVER_URL}/upload_to_stream",
+        files={"file": ("photo.jpg", image_bytes_io.getvalue(), "image/jpeg")}
+    )
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Image upload failed:", response.text)
+        return None
+
+def on_PIR():
+    frame = take_photo()
+    result = upload_image(frame)
+    if result and "ID" in result:
+        response_id = result["ID"]
+        print(f"Image uploaded with ID: {response_id}")
+        print(result)
+        if result and result.get("detection") == True:
+            deterrent()
+            triggered = "true"
+
+            # Record video only if animal was detected
+            
+            video_path = "/tmp/motion_video.h264"
+            mp4_path = "/tmp/motion_video.mp4"
+
+            encoder = H264Encoder()
+            output = FileOutput(video_path)
+
+            picam2.start_recording(encoder, output)
+            time.sleep(5)
+            picam2.stop_recording()
+
+            # Convert to MP4 using MP4Box
+            subprocess.run(["MP4Box", "-add", video_path, mp4_path], check=True)
+
+            # Upload video
+            upload_video(mp4_path, response_id, triggered)
+            update_Oled("Upload Complete")
+
+        else:
+            print("No animal detected. Skipping video. Starting cooldown...")
+            triggered = "false"
+    else:
+        print("Skipping video upload due to failed image upload.")
+    PIR_STATE = False
+    time.sleep(2)
+
+
+# === Upload Video ===
+def upload_video(path, ID, triggered):
+    with open(path, 'rb') as f:
+        video_bytes = f.read()
+
+    # Send video as bytes with correct content type
+    response = requests.post(
+        f"{SERVER_URL}/upload_video",
+        data={"ID": ID, "deterrent": triggered},
+        files={
+            "file": ("motion_video.mp4", video_bytes, "video/mp4")
+        }
+    )
+
+    if response.status_code == 200:
+        print("Video uploaded successfully:", response.json())
+    else:
+        print("Video upload failed:", response.text)
+
+# === GPIO Setup ===
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIR_PIN, GPIO.IN)
+
+time.sleep(2)
+
+#GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=motion_detected, bouncetime=200)
+
+print("System ready. Waiting for motion...")
+
+picam2 = Picamera2()
+picam2.start()
+time.sleep(1)  # Warm-up
+update_Oled("Camera Initialised")
+# === Keep running until Ctrl+C ===
+
+prev_time_stream = 0
+
+try:
+    while True:
+
+        current_time = time.time()
+
+        if(GPIO.input(PIR_PIN) == GPIO.HIGH):
+            on_PIR()
+        
+        if(current_time - prev_time_stream > 30):
+            stream_state = fetchStreamState()
+            while(stream_state):    
+                stream_state = fetchStreamState()
+                frame = take_photo()
+                uploadToStream(frame)
+                time.sleep(0.01)
+            prev_time_stream = current_time
+
+
+            
+except KeyboardInterrupt:
+    print("\nExiting. Cleaning up...")
+    GPIO.cleanup()

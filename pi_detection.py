@@ -158,6 +158,7 @@ font = ImageFont.load_default()
 
 
 def textToOled(text):
+    draw.rectangle(oled_screen.bounding_box, outline=0, fill=0)
     draw.text((10, 10), text, font=font, fill=255)
     oled_screen.display(oled_image)
 

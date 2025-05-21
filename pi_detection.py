@@ -189,6 +189,8 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     print(network_info)
     time.sleep(0.5)
 
+textToOled("Starting Detction")
+time.sleep(0.5)
 
 
 try:
@@ -199,14 +201,13 @@ try:
         if(GPIO.input(PIR_PIN) == GPIO.HIGH):
             on_PIR()
         
-        if(current_time - prev_time_stream > 30):
-            stream_state = fetchStreamState()
-            while(stream_state):    
-                stream_state = fetchStreamState()
-                frame = take_photo()
-                uploadToStream(frame)
-                time.sleep(0.01)
-            prev_time_stream = current_time
+        #if(current_time - prev_time_stream > 30):
+        #    stream_state = fetchStreamState()
+        #    while(stream_state):    
+        #        stream_state = fetchStreamState()
+        #        frame = take_photo()
+        #        uploadToStream(frame)
+        #    prev_time_stream = current_time
 
 
             

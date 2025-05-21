@@ -16,6 +16,10 @@ from PIL import Image, ImageDraw, ImageFont
 # === Configuration ===
 PIR_PIN = 22
 BUTTON_PIN = 27
+
+SERVER_POLL_TIME = 0.5
+
+
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
@@ -144,9 +148,17 @@ def upload_video(path, ID, triggered):
         print("Video upload failed:", response.text)
 
 
+def clear_Oled():
+    draw.rectangle((0, 0, oled_screen.width, oled_screen.height), outline=0, fill=0)
+    oled_screen.display(oled_image)
+
+def textToOled(text):
+    draw.text((10, 10), text, font=font, fill=255)
+    oled_screen.display(oled_image)
 
 print("Starting up...")
 print("Beggining setup...")
+
 
 # Initialize the I2C connection to the OLED
 oled_i2c = i2c(port=1, address=0x3C)
@@ -156,12 +168,8 @@ oled_screen = ssd1306(oled_i2c)
 oled_image = Image.new("1", oled_screen.size)
 draw = ImageDraw.Draw(oled_image)
 font = ImageFont.load_default()
-
-
-def textToOled(text):
-    draw.rectangle(oled_screen.bounding_box, outline=0, fill=0)
-    draw.text((10, 10), text, font=font, fill=255)
-    oled_screen.display(oled_image)
+oled_screen.clear()
+textToOled("Starting up...")
 
 print("Oled Initialised")
 
@@ -169,8 +177,6 @@ print("Oled Initialised")
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIR_PIN, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-time.sleep(0.5)
 
 
 
@@ -180,14 +186,22 @@ picam2 = Picamera2()
 picam2.start()
 time.sleep(1)  # Warm-up
 textToOled("Camera Initialised")
-# === Keep running until Ctrl+C ===
+
 time.sleep(0.5)
 
 prev_time_stream = 0
-
+dots = 0
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
+    oled_screen.clear()
     network_info = get_network_info()
     textToOled(network_info)
+    for i in range(dots):
+        textToOled(".")
+    dots += 1
+    if(dots > 3):
+        dots = 0
+    textToOled("Press Button to arm")
+
     print(network_info)
     time.sleep(0.5)
 

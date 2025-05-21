@@ -7,12 +7,11 @@ import io
 import time
 import cv2
 import subprocess
-import psutil
 import threading
 from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306
 from PIL import Image, ImageDraw, ImageFont
-import socket
+
 # === Configuration ===
 PIR_PIN = 22
 BUTTON_PIN = 27
@@ -176,7 +175,7 @@ GPIO.setup(PIR_PIN, GPIO.IN)
 
 time.sleep(0.5)
 
-GPIO.add_event_detect(PIR_PIN, GPIO.RISING, callback=motion_detected, bouncetime=200)
+
 
 print("System ready. Waiting for motion...")
 

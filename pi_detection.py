@@ -184,7 +184,7 @@ time.sleep(0.5)
 
 prev_time_stream = 0
 network_info = get_network_info()
-while(GPIO.input(PIR_PIN) == GPIO.HIGH):
+while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     textToOled(network_info)
     print(network_info)
     time.sleep(0.5)

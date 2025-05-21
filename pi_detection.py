@@ -28,7 +28,7 @@ def get_network_info():
         # Get SSID
         ssid = subprocess.check_output("iwgetid -r", shell=True).decode().strip()
 
-        info_text = f"{"SSID = "+ ssid}\n{"IP = ", ip}"
+        info_text = f"SSID = {ssid}\nIP = {ip}"
 
         return info_text
     except Exception as e:
@@ -184,8 +184,9 @@ textToOled("Camera Initialised")
 time.sleep(0.5)
 
 prev_time_stream = 0
-network_info = get_network_info()
+
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
+    network_info = get_network_info()
     textToOled(network_info)
     print(network_info)
     time.sleep(0.5)

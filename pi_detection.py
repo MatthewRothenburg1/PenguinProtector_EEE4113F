@@ -29,20 +29,21 @@ def clear_oled():
     blank_image = Image.new("1", device.size)
     device.display(blank_image)
 
-def init_Oled(text):
-    image = Image.new("1", device.size)
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.load_default()
-    draw.text((10, 10), text, font=font, fill=255)
-    device.display(image)
 
-    time.sleep(5)
-    clear_oled()
+image = Image.new("1", device.size)
+draw = ImageDraw.Draw(image)
+font = ImageFont.load_default()
+draw.text((10, 10), "HelloWorld", font=font, fill=255)
+device.display(image)
+
+time.sleep(5)
+clear_oled()
 
 def update_Oled(text):
-    thread = threading.Thread(target=init_Oled, args=(text,))
-    thread.daemon = True
-    thread.start()
+    clear_oled()
+    image = Image.new("1", device.size)
+    draw.text((10, 10), text, font=font, fill=255)
+    device.display(image)
 
 def get_network_info():
     try:

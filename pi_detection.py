@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 import socket
 # === Configuration ===
 PIR_PIN = 22
+BUTTON_PIN = 27
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
@@ -54,11 +55,11 @@ def get_network_info():
 
         info_text = f"{ssid}\n{ip}"
 
-        update_Oled(info_text)
+        return info_text
     except Exception as e:
         print("Network info fetch failed:", e)
         update_Oled("No Network")
-get_network_info()
+
 
 
 # === Deterrent Stub ===
@@ -186,6 +187,11 @@ update_Oled("Camera Initialised")
 # === Keep running until Ctrl+C ===
 
 prev_time_stream = 0
+network_info = get_network_info()
+while(not GPIO.input(PIR_PIN)):
+    update_Oled(network_info)
+
+
 
 try:
     while True:

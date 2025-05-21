@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FileOutput
@@ -27,7 +28,7 @@ def get_network_info():
         # Get SSID
         ssid = subprocess.check_output("iwgetid -r", shell=True).decode().strip()
 
-        info_text = f"{ssid}\n{ip}"
+        info_text = f"{"SSID = "+ ssid}\n{"IP = ", ip}"
 
         return info_text
     except Exception as e:

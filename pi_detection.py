@@ -18,32 +18,6 @@ BUTTON_PIN = 27
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
-# Initialize the I2C connection to the OLED
-serial = i2c(port=1, address=0x3C)
-device = ssd1306(serial)
-
-debounce_seconds = 10
-dispText = "Screen Functional"
-# Initialize the I2C connection to the OLED
-def clear_oled():
-    blank_image = Image.new("1", device.size)
-    device.display(blank_image)
-
-
-image = Image.new("1", device.size)
-draw = ImageDraw.Draw(image)
-font = ImageFont.load_default()
-draw.text((10, 10), "HelloWorld", font=font, fill=255)
-device.display(image)
-
-time.sleep(5)
-clear_oled()
-
-def update_Oled(text):
-    clear_oled()
-    image = Image.new("1", device.size)
-    draw.text((10, 10), text, font=font, fill=255)
-    device.display(image)
 
 def get_network_info():
     try:
@@ -57,9 +31,10 @@ def get_network_info():
 
         return info_text
     except Exception as e:
-        print("Network info fetch failed:", e)
-        update_Oled("No Network")
-
+        return "No network info"
+def clear_oled():
+    blank_image = Image.new("1", device.size)
+    device.display(blank_image)
 
 
 # === Deterrent Stub ===
@@ -170,6 +145,27 @@ def upload_video(path, ID, triggered):
     else:
         print("Video upload failed:", response.text)
 
+
+
+print("Starting up...")
+print("Beggining setup...")
+
+# Initialize the I2C connection to the OLED
+oled_i2c = i2c(port=1, address=0x3C)
+oled_screen = ssd1306(oled_i2c)
+
+
+oled_image = Image.new("1", oled_screen.size)
+draw = ImageDraw.Draw(oled_image)
+font = ImageFont.load_default()
+clear_oled()
+
+def textToOled(text):
+    draw.text((10, 10), text, font=font, fill=255)
+    oled_screen.display(oled_image)
+
+print("Oled Initialised")
+
 # === GPIO Setup ===
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIR_PIN, GPIO.IN)
@@ -178,18 +174,21 @@ time.sleep(0.5)
 
 
 
-print("System ready. Waiting for motion...")
+print("Initialisng Camera")
 
 picam2 = Picamera2()
 picam2.start()
 time.sleep(1)  # Warm-up
-update_Oled("Camera Initialised")
+textToOled("Camera Initialised")
 # === Keep running until Ctrl+C ===
+time.sleep(0.5)
 
 prev_time_stream = 0
 network_info = get_network_info()
-while(not GPIO.input(PIR_PIN)):
-    update_Oled(network_info)
+while(GPIO.input(PIR_PIN) != GPIO.HIGH):
+    textToOled(network_info)
+    print(network_info)
+    time.sleep(0.5)
 
 
 

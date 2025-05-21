@@ -32,9 +32,6 @@ def get_network_info():
         return info_text
     except Exception as e:
         return "No network info"
-def clear_oled():
-    blank_image = Image.new("1", device.size)
-    device.display(blank_image)
 
 
 # === Deterrent Stub ===
@@ -158,7 +155,7 @@ oled_screen = ssd1306(oled_i2c)
 oled_image = Image.new("1", oled_screen.size)
 draw = ImageDraw.Draw(oled_image)
 font = ImageFont.load_default()
-clear_oled()
+
 
 def textToOled(text):
     draw.text((10, 10), text, font=font, fill=255)

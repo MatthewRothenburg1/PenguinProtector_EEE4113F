@@ -186,7 +186,7 @@ picam2 = Picamera2()
 picam2.start()
 time.sleep(1)  # Warm-up
 textToOled("Camera Initialised")
-
+oled_screen.clear()
 time.sleep(0.5)
 
 prev_time_stream = 0
@@ -194,13 +194,10 @@ dots = 0
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     oled_screen.clear()
     network_info = get_network_info()
-    textToOled(network_info)
-    for i in range(dots):
-        textToOled(".")
+    textToOled(network_info + "."*dots + "\nPress Button to Arm")
     dots += 1
     if(dots > 3):
         dots = 0
-    textToOled("Press Button to arm")
 
     print(network_info)
     time.sleep(0.5)

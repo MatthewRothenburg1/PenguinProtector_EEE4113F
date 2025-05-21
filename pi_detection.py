@@ -44,19 +44,22 @@ def update_Oled(text):
     thread.daemon = True
     thread.start()
 
-def test_server_connection():
+def get_network_info():
     try:
-        response = requests.get(f"{SERVER_URL}/ping")  # Adjust to a known lightweight route
-        if response.status_code == 200:
-            print("Connected to server.")
-            update_Oled("Connected to server")
-        else:
-            print("Server responded, but with error status.")
-            update_Oled("Server Error")
-    except requests.RequestException as e:
-        print("Could not connect to server:", e)
-        update_Oled("Server Unreachable")
-test_server_connection()
+        # Get IP address of wlan0
+        ip = subprocess.check_output("hostname -I", shell=True).decode().split()[0]
+
+        # Get SSID
+        ssid = subprocess.check_output("iwgetid -r", shell=True).decode().strip()
+
+        info_text = f"{ssid}\n{ip}"
+
+        update_Oled(info_text)
+    except Exception as e:
+        print("Network info fetch failed:", e)
+        update_Oled("No Network")
+get_network_info()
+
 
 # === Deterrent Stub ===
 def deterrent():

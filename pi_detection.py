@@ -150,7 +150,6 @@ def upload_video(path, ID, triggered):
 
 def clear_Oled():
     draw.rectangle((0, 0, oled_screen.width, oled_screen.height), outline=0, fill=0)
-    oled_screen.display(oled_image)
 
 def textToOled(text):
     draw.text((10, 10), text, font=font, fill=255)
@@ -192,12 +191,10 @@ time.sleep(0.5)
 prev_time_stream = 0
 dots = 0
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
-    oled_screen.clear()
+    clear_Oled()
     network_info = get_network_info()
     textToOled(network_info + "."*dots + "\nPress Button to Arm")
-    dots += 1
-    if(dots > 3):
-        dots = 0
+    dots = (dots + 1) % 4  # Cycle from 0 to 3
 
     print(network_info)
     time.sleep(0.5)

@@ -167,6 +167,7 @@ print("Oled Initialised")
 # === GPIO Setup ===
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIR_PIN, GPIO.IN)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 time.sleep(0.5)
 
@@ -183,7 +184,7 @@ time.sleep(0.5)
 
 prev_time_stream = 0
 network_info = get_network_info()
-while(GPIO.input(PIR_PIN) != GPIO.HIGH):
+while(GPIO.input(PIR_PIN) == GPIO.HIGH):
     textToOled(network_info)
     print(network_info)
     time.sleep(0.5)

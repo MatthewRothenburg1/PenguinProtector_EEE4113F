@@ -69,12 +69,37 @@ def fetchStreamState():
         response = requests.get(f"{SERVER_URL}/get_streaming_state")
         if response.status_code == 200:
             data = response.json()
-            print("Streaming state:", data)
+            return data
         else:
+            return None
             print(f"Failed to get data. Status code: {response.status_code}")
     except requests.RequestException as e:
+        return None
+    
+
+def setStreamState(state):
+    """
+    Sends a request to set the streaming state on the server.
+
+    Args:
+        server_url (str): Base URL of the server (e.g., http://192.168.1.100:5000).
+        state (str): Desired state, typically "on" or "off".
+
+    Returns:
+        bool: True if the state was successfully set, False otherwise.
+    """
+    try:
+        response = requests.post(f"{SERVER_URL}/set_streaming_state", json={"state": state})
+        if response.status_code == 200:
+            print(f"Streaming state set to '{state}'.")
+            return True
+        else:
+            print(f"Failed to set streaming state. Status code: {response.status_code}")
+            return False
+    except requests.RequestException as e:
         print("Error:", e)
-    return data
+        return False
+
 
 def uploadToStream(frame):
     _, jpeg = cv2.imencode(".jpg", frame)
@@ -211,13 +236,20 @@ try:
         if(GPIO.input(PIR_PIN) == GPIO.HIGH):
             on_PIR()
         
-        #if(current_time - prev_time_stream > 30):
-        #    stream_state = fetchStreamState()
-        #    while(stream_state):    
-        #        stream_state = fetchStreamState()
-        #        frame = take_photo()
-        #        uploadToStream(frame)
-        #    prev_time_stream = current_time
+        if(current_time - prev_time_stream > 30):
+            stream_state = fetchStreamState()
+            
+            if stream_state is True:
+                STREAM_START_TIME = current_time
+            while(stream_state):
+                current_time = time.time()
+                stream_state = fetchStreamState()
+                if(current_time - STREAM_START_TIME > 200):
+                    stream_state = False
+                    setStreamState("off")
+                frame = take_photo()
+                uploadToStream(frame)
+            prev_time_stream = current_time
 
 
             

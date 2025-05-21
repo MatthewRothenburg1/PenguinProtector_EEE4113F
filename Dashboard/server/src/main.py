@@ -14,14 +14,18 @@
 
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app/upload_frame"
 
-from fastapi import FastAPI, UploadFile, File, Request, Query, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Request, Query, BackgroundTasks, Form
 from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates # type: ignore
 from fastapi.staticfiles import StaticFiles
 
 from io import BytesIO
+import asyncio
 import time
+import uuid
 
+
+from datetime import datetime, timedelta
 from google.cloud import vision
 from google.oauth2 import service_account # type: ignore
 from googleapiclient.discovery import build # type: ignore
@@ -32,12 +36,24 @@ import firebase_admin
 from firebase_admin import credentials, firestore, db
 from telegram import Bot # type: ignore
 # Create a FastAPI application instance
+
+#ToDO
+#5 - Count detections vs Non-detections within (day, week, month)
+#6 - Set up streaming
+#7 - RTC config
+#8 - RTC db field
+
+
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 #Frame buffer for the latest image
 latest_frame = BytesIO()
+frame_event = asyncio.Event()  # Used to signal new frame arrival
+
 GOOGLE_CLOUD_PROJECT_ID = 'design-dashboard-eee4113f' # type: ignore
 
 TELEGRAM_TOKEN = '7713440185:AAEeLw8dRbzNgN3hsFGvqnZVi_wkgR6f_tM'
@@ -53,7 +69,7 @@ telegram_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
 # Service account credentials
 creds = service_account.Credentials.from_service_account_file(
     'design-dashboard-eee4113f-0fab4abb4b04.json',
-    scopes=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/cloud-platform']  # Correct scope for Drive access
+    scopes=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/spreadsheets']  # Correct scope for Drive access
 )
 creds2 = credentials.Certificate('design-dashboard-eee4113f-0fab4abb4b04.json')
 
@@ -69,15 +85,15 @@ sheets_service = build('sheets', 'v4', credentials=creds)
 vision_client = vision.ImageAnnotatorClient(credentials=creds)
 
 
-
-
-
 # Folder ID for Google Drive
 PHOTOS_ID = '1mMD_hPlF4bP9lcVVpjf499byGWU52rS8'  # PenguinProtector/Photos
 VIDEOS_ID = '14Si2Uevxrns5bMSnfFt_AJANKfkSgbMj'  # PenguinProtector/Videos
+SPREADSHEET_ID = '1RDzJ9jUoakI7AXR_NkeoroyjYiuy4Nq-OaEe4I-Ouvs' #Spreadsheet ID for Google Sheets
 
 # Upload image to Google Drive
-def upload_to_drive(file_stream, filename, mimetype):
+def upload_to_drive(file_stream, filename):
+    mimetype = 'image/jpeg'  #Format for upload
+
     file_metadata = {
         'name': filename,
         'parents': [PHOTOS_ID]
@@ -90,10 +106,13 @@ def upload_to_drive(file_stream, filename, mimetype):
         fields='id'
     ).execute()
 
-    return uploaded_file.get('id')
+    file_id = uploaded_file.get('id') #Get the file ID of the uploaded file
+
+    return f'https://drive.google.com/file/d/{file_id}/preview' #Return the link to the photo preview
 
 # Upload video to Google Drive (Placeholder)
-def upload_video_to_drive(file_stream, filename, mimetype):
+def upload_video_to_drive(file_stream, filename):
+    mimetype = 'video/mp4'
     file_metadata = {
         'name': filename,
         'parents': [VIDEOS_ID]
@@ -106,7 +125,9 @@ def upload_video_to_drive(file_stream, filename, mimetype):
         fields='id'
     ).execute()
 
-    return uploaded_file.get('id')
+    file_id = uploaded_file.get('id') #Get the file ID of the uploaded file
+
+    return f'https://drive.google.com/file/d/{file_id}/preview' #Return the link to the video preview
 
 def upload_image_to_vision(file_stream):
     
@@ -119,6 +140,55 @@ def upload_image_to_vision(file_stream):
     objects = response.localized_object_annotations
 
     return objects
+
+def get_number_of_detections():
+    RANGE = "Sheet1!B:C"  #Columns of Time and Detection State
+    
+    response = sheets_service.spreadsheets().values().get(
+        spreadsheetId=SPREADSHEET_ID,
+        range=RANGE
+    ).execute()
+
+    rows = response.get("values", [])
+
+    # Get current time
+    now = datetime.now()
+
+    # Time periods
+    one_hour_ago = now - timedelta(hours=1)
+    one_day_ago = now - timedelta(days=1)
+    one_week_ago = now - timedelta(weeks=1)
+    one_month_ago = now - timedelta(days=30)
+
+    # Initialize counts
+    counts = {
+        "hour": {"true": 0, "false": 0},
+        "day": {"true": 0, "false": 0},
+        "week": {"true": 0, "false": 0},
+        "month": {"true": 0, "false": 0},
+    }
+
+    # Loop through rows and classify
+    for row in rows:
+        if len(row) < 2:
+            continue
+
+        try:
+            timestamp = datetime.fromisoformat(row[0])
+        except ValueError:
+            continue
+
+        result = row[1].strip().lower()
+
+        if timestamp >= one_month_ago:
+            counts["month"][result] += 1
+        if timestamp >= one_week_ago:
+            counts["week"][result] += 1
+        if timestamp >= one_day_ago:
+            counts["day"][result] += 1
+        if timestamp >= one_hour_ago:
+            counts["hour"][result] += 1
+    return counts
 
 def generate_from_memory():
     global latest_frame
@@ -157,17 +227,23 @@ def evaluate_vision_response(response):
         # Check if the object is 'Person' and if the score is greater than 0.5
         if obj.name == 'Person' and obj.score > 0.5:
             return True
+        if obj.name == 'Animal' and obj.score > 0.3:
+            return True
+        if obj.name == 'Cat' and obj.score > 0.3:
+            return True
+        
     # If no matching 'Person' with score > 0.5, return False
     return False
 
-def on_detection(file_bytes: BytesIO):
-    # Upload the image to Google Drive
-    mimetype = 'image/jpeg'  # Adjust based on your image type
-    upload_to_drive(file_bytes, 'detected_image.jpg', mimetype)
-    # Send Telegram notification (Placeholder)
-    send_photo_to_user(file_bytes, "Person detected!")
-    return
+def on_detection(file_bytes: BytesIO, results, ID):
+    
+    if(results): 
+        send_photo_to_user(file_bytes, "Honey Badger!!! Activating Penguin Protector. May need backup.") #If the detction state is true send a notification to the user over telegram.
 
+    photo_drive_link =   upload_to_drive(file_bytes, ID +'.jpg') #Upload the image to Google Drive and store the link
+    detection_time = datetime.now().replace(microsecond=0).isoformat()
+    upload_time_and_ID_to_sheets(ID, detection_time, results, photo_drive_link) #Upload the time and ID to Google Sheets
+    return
 
 def send_message_to_user(message):
     data = {
@@ -195,36 +271,105 @@ def send_photo_to_user(photo: BytesIO, caption: str = ''):
     else:
         print(f"Failed to send photo. Error: {response.text}")
 
-# Upload data to Google Sheets (Placeholder)
-def upload_data_to_sheets(data):
-    return None
+# Upload data to Google Sheets
+def upload_time_and_ID_to_sheets(ID, time_taken, results, photo_link):
+    
+    sheet_range = 'Sheet1!A:D'  # Sheet name and columns A to D
+    
+    # Prepare the data row to append
+    # 'results' is a boolean — we store "Detection" or "No Detection"
+    values = [
+        [ID, time_taken, results, photo_link]
+    ]
+    
+    body = {
+        'values': values
+    }
+
+    try:
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=sheet_range,
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+    except Exception as e:
+        print(f"Error uploading to Sheets: {e}")
+    return
+
+def upload_video_and_detterent_to_sheets(ID,  deterrent, video_link):
+    try:
+        # Fetch only column A to find the row number of the matching ID
+        result = sheets_service.spreadsheets().values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range='Sheet1!A:A'
+        ).execute()
+        values = result.get('values', [])
+
+        # Search for the ID in column A
+        for i, row in enumerate(values):
+            if row and row[0] == ID:
+                row_number = i + 1  # Convert zero-based index to 1-based for Sheets
+                update_range = f'Sheet1!E{row_number}:F{row_number}'
+                body = {
+                    'values': [[deterrent, video_link]]
+                }
+                sheets_service.spreadsheets().values().update(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range=update_range,
+                    valueInputOption='RAW',
+                    body=body
+                ).execute()
+                return
+        print(f"ID '{ID}' not found in column A.")
+    except Exception as e:
+        print(f"Error updating Sheets: {e}")
+
 
 
 ###############################################################################################
 # FastAPI Routes
 ###############################################################################################
 
-@app.get("/detection_state")
-def get_detect():
-    return get_detection_state()
-
 @app.post("/upload_to_vision")
 async def upload_to_vision(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
     file_bytes = BytesIO(file.file.read())
     
     try:
-        # Simulate uploading the image to Vision API
-        response = upload_image_to_vision(file_bytes)
+
+        ID = str(uuid.uuid4()) #Generate a unique ID upload in order to match indivdual uploads.
+
+        response = upload_image_to_vision(file_bytes) #Upload the captured image to Google Vision API and store the response
         
-        # Evaluate the response to check for a detected person
-        results = evaluate_vision_response(response)
+        results = evaluate_vision_response(response) #Evaluate the response to check validity (Results = True if honeybadger/leopard)
+
+        background_tasks.add_task(on_detection, file_bytes, results, ID) #If a person is detected, start the background task (upload to Google Drive, send Telegram message, etc.)
         
-        # If a person is detected, start the background task
-        if results and background_tasks:
-            background_tasks.add_task(on_detection, file_bytes)
+        return {"detection": results, "ID": ID}  #Return the results and the ID of the upload to the Raspberry PI
+    
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+#API route to upload a received video to Google Drive
+@app.post("/upload_video")
+async def upload_video(
+    ID: str = Form(...),              # Form field for ID
+    deterrent: str = Form(...),       # Form field for deterrent
+    file: UploadFile = File(...)      # File field for video
+):
+    file_bytes = BytesIO(await file.read())
+
+    try:
+        file_id = upload_video_to_drive(file_bytes, ID + '.mp4')  # Upload the video to Google Drive
+        upload_video_and_detterent_to_sheets(ID, deterrent, file_id)  # Upload the video link and deterrent to Google Sheets
         
-        # Return the results of the detection check
-        return {"person_detected": results}
+        return JSONResponse(content={
+            "message": "Video uploaded successfully",
+            "file_id": file_id,
+            "ID": ID,
+            "deterrent": deterrent
+        })
     
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -234,37 +379,40 @@ async def upload_to_vision(file: UploadFile = File(...), background_tasks: Backg
 def get_detect():
     return get_streaming_state()
 
+
 @app.post("/set_streaming_state")
 def set_streaming_state_endpoint(value: bool = Query(...)):
     return set_streaming_state(value)
 
 
 @app.post("/upload_to_stream")
-async def upload_to_stream(file: UploadFile = File(...)):
-    global latest_frame
+async def upload_frame(file: UploadFile = File(...)):
+    global latest_frame, frame_event
     latest_frame = BytesIO(await file.read())
-    latest_frame.seek(0)
-    
+    frame_event.set()
+    return {"status": "Frame received"}
 
 @app.get("/video_feed")
-def video_feed():
+async def video_feed():
     return StreamingResponse(generate_from_memory(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
+async def generate_from_memory():
+    global latest_frame, frame_event
+    while True:
+        await frame_event.wait()
+        frame_event.clear()
+        if latest_frame.getbuffer().nbytes > 0:
+            frame = latest_frame.getvalue()
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n'
+            )
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-#API route to upload a received video to Google Drive
-@app.post("/upload_video")
-async def upload_video(file: UploadFile = File(...)):
-    file_bytes = BytesIO(await file.read())
-    mimetype = file.content_type or guess_type(file.filename)[0] or 'video/mp4'
-
-    try:
-        file_id = upload_video_to_drive(file_bytes, file.filename, mimetype)
-        return JSONResponse(content={"message": "Video uploaded successfully", "file_id": file_id})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 

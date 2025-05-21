@@ -28,12 +28,13 @@
     </section>
 
     <!-- Row 2: Analytics + False Detection (Full Width) -->
-    <section class="card wide">
+    <section class="card">
       <h2>Detection Analytics & False Detection Rate</h2>
 
       <div class="analytics-header">
         <label for="analytics-range">View by:</label>
         <select id="analytics-range">
+          <option value="hour">Last Hour</option>
           <option value="day">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
@@ -48,20 +49,16 @@
     </section>
 
     <!-- Row 3: Livestream (Full Width) -->
-    <section class="card wide">
+    <section class="card">
       <h2>Live Stream</h2>
-      <button onclick="startLivestream()">Start Livestream</button>
+      <button id="streamButton" onclick="toggleStreaming()">Start Livestream</button>
       <div class="video-container">
-        <img id="livestream" src="" alt="Livestream will appear here">
+        <img src="/video_feed" width="100%">
       </div>
     </section>
   </main>
 
   <!-- Optional JS for stream -->
-  <script>
-    function startLivestream() {
-      document.getElementById("livestream").src = "/video_feed";
-    }
-  </script>
+  <script src="/static/script.js"></script>
 </body>
 </html>

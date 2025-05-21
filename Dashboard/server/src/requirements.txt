@@ -1,12 +1,20 @@
 fastapi==0.115.12
 uvicorn==0.34.2
-google-auth==2.39.0
-google-api-python-client==2.167.0
-google-auth-httplib2==0.2.0
-google-cloud-vision==3.10.1  # Add this for Google Vision API
-firebase-admin==5.2.0
-Pillow==11.1.0
-jinja2==3.1.6
+requests==2.28.1
 aiofiles==0.8.0
 python-multipart==0.0.5
-requests==2.28.1
+Pillow==11.1.0
+jinja2==3.1.6
+
+# Google Cloud + Vision
+google-auth==2.39.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.167.0
+google-cloud-vision==3.10.1
+
+# Firebase
+firebase-admin==5.2.0
+
+# Telegram
+python-telegram-bot==13.15  # or update if needed
+

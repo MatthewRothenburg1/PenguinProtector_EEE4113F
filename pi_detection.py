@@ -6,6 +6,7 @@ import RPi.GPIO as GPIO
 import requests
 import io
 import time
+import os
 import cv2
 import subprocess
 import threading
@@ -115,49 +116,66 @@ def uploadToStream(frame):
         return None
 
 def on_PIR():
-    clear_Oled()
-    textToOled("Motion Detected")
-    frame = take_photo()
-    result = upload_image(frame)
-    if result and "ID" in result:
-        response_id = result["ID"]
-        print(f"Image uploaded with ID: {response_id}")
-        print(result)
-        if result and result.get("detection") == True:
-            deterrent()
-            triggered = "true"
-            clear_Oled()
-            textToOled("Animal Detected")
-    
+    global PIR_STATE, triggered, picam2
 
-            # Record video only if animal was detected
-            
-            video_path = "/tmp/motion_video.h264"
-            mp4_path = "/tmp/motion_video.mp4"
+    if PIR_STATE:  # prevent reentry
+        return
+    PIR_STATE = True
 
-            encoder = H264Encoder()
-            output = FileOutput(video_path)
+    try:
+        clear_Oled()
+        textToOled("Motion Detected")
+        frame = take_photo()
+        result = upload_image(frame)
 
-            picam2.start_recording(encoder, output)
-            clear_Oled()
-            textToOled("Taking Video")
-            time.sleep(5)
-            picam2.stop_recording()
+        if result and "ID" in result:
+            response_id = result["ID"]
+            print(f"Image uploaded with ID: {response_id}")
+            print(result)
+            if result.get("detection") == True:
+                triggered = "true"
+                deterrent()
+                clear_Oled()
+                textToOled("Animal Detected")
 
-            # Convert to MP4 using MP4Box
-            subprocess.run(["MP4Box", "-add", video_path, mp4_path], check=True)
+                video_path = "/tmp/motion_video.h264"
+                mp4_path = "/tmp/motion_video.mp4"
 
-            # Upload video
-            upload_video(mp4_path, response_id, triggered)
-            
+                encoder = H264Encoder()
+                output = FileOutput(video_path)
 
+                try:
+                    picam2.start_recording(encoder, output)
+                    clear_Oled()
+                    textToOled("Taking Video")
+                    time.sleep(5)
+                    picam2.stop_recording()
+                except Exception as e:
+                    print("Camera recording error:", e)
+                    PIR_STATE = False
+                    return
+
+                try:
+                    subprocess.run(["MP4Box", "-add", video_path, mp4_path], check=True)
+                except subprocess.CalledProcessError as e:
+                    print("MP4Box failed:", e)
+                    PIR_STATE = False
+                    return
+
+                if os.path.exists(mp4_path):
+                    upload_video(mp4_path, response_id, triggered)
+                else:
+                    print("Video not found after conversion.")
+
+            else:
+                print("No animal detected. Skipping video. Starting cooldown...")
+                triggered = "false"
         else:
-            print("No animal detected. Skipping video. Starting cooldown...")
-            triggered = "false"
-    else:
-        print("Skipping video upload due to failed image upload.")
-    PIR_STATE = False
-    time.sleep(2)
+            print("Skipping video upload due to failed image upload.")
+
+    finally:
+        PIR_STATE = False
+        time.sleep(2)
 
 
 # === Upload Video ===

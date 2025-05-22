@@ -120,15 +120,15 @@ def uploadToStream(frame):
         return None
 
 def on_PIR():
-    global  triggered, picam2
+    global triggered, picam2
     print("2")
     try:
         clear_Oled()
         textToOled("Motion Detected")
         print("3")
         frame = take_photo()
-	if frame is None:
-	    return
+        if frame is None:
+            return
 
         print("4")
         result = upload_image(frame)
@@ -158,7 +158,6 @@ def on_PIR():
                     picam2.stop_recording()
                 except Exception as e:
                     print("Camera recording error:", e)
-                    
                     return
 
                 try:
@@ -179,8 +178,8 @@ def on_PIR():
             print("Skipping video upload due to failed image upload.")
 
     finally:
-       
         time.sleep(2)
+
 
 
 # === Upload Video ===

@@ -413,7 +413,40 @@ async def generate_from_memory():
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Coordinates for sunrise-sunset API
+LAT = -34.454189  # 34°27’15.08” S
+LON = 20.399619   # 20°23’58.63” E
 
+@app.get("/ir_should_be_on")
+def should_ir_be_on():
+    try:
+        # 1. Get current UTC time
+        now_utc = datetime.utcnow()
+
+        # 2. Get sunrise and sunset from sunrise-sunset.org API
+        response = requests.get(
+            "https://api.sunrise-sunset.org/json",
+            params={"lat": LAT, "lng": LON, "formatted": 0}
+        )
+        data = response.json()
+
+        if data["status"] != "OK":
+            return {"error": "Could not retrieve sunrise/sunset data"}
+
+        sunrise = datetime.fromisoformat(data["results"]["sunrise"])
+        sunset = datetime.fromisoformat(data["results"]["sunset"])
+
+        # 3. Add buffer
+        sunrise_buffer = sunrise - timedelta(minutes=30)
+        sunset_buffer = sunset + timedelta(minutes=30)
+
+        # 4. Decision logic
+        ir_on = now_utc < sunrise_buffer or now_utc > sunset_buffer
+
+        return {"ir_on": ir_on}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 ###############################################################################################

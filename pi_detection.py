@@ -298,7 +298,7 @@ for i in range(10):
 IR_STATE = False
 prev_time_ir_check = 0 
 prev_detection_time = 0
-IR_CHECK_INTERVAL = 1800  # 30 minutes in seconds
+IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
 
 try:
     while True:

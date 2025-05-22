@@ -25,6 +25,16 @@ SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
 
+
+def compress_video(input_path, output_path):
+    subprocess.run([
+        "ffmpeg", "-i", input_path,
+        "-vcodec", "libx264", "-crf", "28",  # Adjust CRF for more compression
+        "-preset", "fast",
+        output_path
+    ], check=True)
+
+
 def get_network_info():
     try:
         # Get IP address of wlan0
@@ -170,8 +180,11 @@ def on_PIR():
                     print("MP4Box failed:", e)
                     return
 
-                if os.path.exists(mp4_path):
-                    upload_video(mp4_path, response_id, triggered)
+                mp4_compressed_path = "/tmp/motion_video_compressed.mp4"
+                compress_video(mp4_path, mp4_compressed_path)
+
+                if os.path.exists(mp4_compressed_path):
+                    upload_video(mp4_compressed_path, response_id, triggered)
                 else:
                     print("Video not found after conversion.")
 

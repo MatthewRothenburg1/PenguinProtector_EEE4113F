@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 # === Configuration ===
 PIR_PIN = 22
 BUTTON_PIN = 27
-IR_PIN = 18              # PWM-capable pin (GPIO18 = physical pin 12)
+IR_PIN = 13              
 PWM_FREQ = 2000          # 2kHz
 DUTY_CYCLE = 50 
 SERVER_POLL_TIME = 0.5
@@ -33,8 +33,10 @@ SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 GPIO.setup(IR_PIN, GPIO.OUT)
 
 # Set the pin HIGH
+print("IR High")
 GPIO.output(IR_PIN, GPIO.HIGH)
 time.sleep(10)
+print("IR Low")
 GPIO.output(IR_PIN, GPIO.LOW)
 time.sleep(10)
 

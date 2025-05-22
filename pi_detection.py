@@ -252,7 +252,7 @@ def set_ir_led_state():
     if IR_STATE:
         pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
     else:
-        pwm.ChangeDutyCycle(0)           # Turn OFF
+        pwm.ChangeDutyCycle(100)           # Turn OFF
 
 print("Starting up...")
 print("Beggining setup...")
@@ -298,6 +298,7 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     network_info = get_network_info()
     textToOled(network_info + "."*dots + "\nPress Button to Arm")
     dots = (dots + 1) % 4  # Cycle from 0 to 3
+
 
     print(network_info)
     time.sleep(0.5)

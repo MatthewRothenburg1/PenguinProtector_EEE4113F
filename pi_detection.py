@@ -89,7 +89,7 @@ def setStreamState(state):
         bool: True if the state was successfully set, False otherwise.
     """
     try:
-        response = requests.post(f"{SERVER_URL}/set_streaming_state", json={"state": state})
+        response = requests.post(f"{SERVER_URL}/set_streaming_state", json={"value": state})
         if response.status_code == 200:
             print(f"Streaming state set to '{state}'.")
             return True

@@ -115,6 +115,8 @@ def uploadToStream(frame):
         return None
 
 def on_PIR():
+    clear_Oled()
+    textToOled("Motion Detected")
     frame = take_photo()
     result = upload_image(frame)
     if result and "ID" in result:
@@ -124,6 +126,9 @@ def on_PIR():
         if result and result.get("detection") == True:
             deterrent()
             triggered = "true"
+            clear_Oled()
+            textToOled("Animal Detected")
+    
 
             # Record video only if animal was detected
             
@@ -134,6 +139,8 @@ def on_PIR():
             output = FileOutput(video_path)
 
             picam2.start_recording(encoder, output)
+            clear_Oled()
+            textToOled("Taking Video")
             time.sleep(5)
             picam2.stop_recording()
 
@@ -238,12 +245,12 @@ try:
 
         current_time = time.time()
         clear_Oled()
-        textToOled("ARMED\nPress Button to Disarm")
-
+        textToOled("ARMED\n" + dots*".")
+        dots = (dots + 1) % 10  # Cycle from 0 to 3
         if(GPIO.input(PIR_PIN) == GPIO.HIGH):
             on_PIR()
         
-        if(current_time - prev_time_stream > 1):
+        if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()
             print(stream_state)
             if stream_state is True:

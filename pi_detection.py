@@ -260,7 +260,7 @@ try:
         clear_Oled()
         textToOled("ARMED\n" + dots*".")
         dots = (dots + 1) % 10  # Cycle from 0 to 3
-        if(current_time - prev_detection_time > 30):
+        if(current_time - prev_detection_time > 60):
             if(GPIO.input(PIR_PIN) == GPIO.HIGH):
                 prev_time_stream = current_time
                 on_PIR()
@@ -284,7 +284,7 @@ try:
                 uploadToStream(frame)
             prev_time_stream = current_time
             time.sleep(0.1)
-
+        time.sleep(1)
             
 except KeyboardInterrupt:
     print("\nExiting. Cleaning up...")

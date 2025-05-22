@@ -77,7 +77,7 @@ def fetchStreamState():
         return None
     
 
-def setStreamState(state):
+def setStreamState(server_url, state):
     """
     Sends a request to set the streaming state on the server.
 
@@ -89,7 +89,7 @@ def setStreamState(state):
         bool: True if the state was successfully set, False otherwise.
     """
     try:
-        response = requests.post(f"{SERVER_URL}/set_streaming_state?value="+state)
+        response = requests.post(f"{server_url}/set_streaming_state?value={state}")
         if response.status_code == 200:
             print(f"Streaming state set to '{state}'.")
             return True
@@ -257,7 +257,7 @@ try:
                 stream_state = fetchStreamState()
                 if(current_time - STREAM_START_TIME > 40):
                     clear_Oled()
-                    setStreamState(False)
+                    setStreamState(SERVER_URL,False)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time

@@ -118,10 +118,6 @@ def uploadToStream(frame):
 def on_PIR():
     global PIR_STATE, triggered, picam2
 
-    if PIR_STATE:  # prevent reentry
-        return
-    PIR_STATE = True
-
     try:
         clear_Oled()
         textToOled("Motion Detected")
@@ -174,7 +170,7 @@ def on_PIR():
             print("Skipping video upload due to failed image upload.")
 
     finally:
-        PIR_STATE = False
+       
         time.sleep(2)
 
 

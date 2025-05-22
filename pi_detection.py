@@ -178,7 +178,7 @@ def on_PIR():
                     time.sleep(5)
                     picam2.stop_recording()
                     # Always turn off IR LEDs after motion event
-                    pwm.ChangeDutyCycle(0)
+                    pwm.ChangeDutyCycle(100)
                 except Exception as e:
                     print("Camera recording error:", e)
                     return
@@ -278,7 +278,7 @@ GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
-pwm.start(0)  # Start OFF initially
+pwm.start(100)  # Start OFF initially
 
 print("Initialisng Camera")
 picam2 = Picamera2()
@@ -352,7 +352,7 @@ try:
                 if(current_time - STREAM_START_TIME > 40):
                     clear_Oled()
                     setStreamState(SERVER_URL,False)
-                    pwm.ChangeDutyCycle(0)
+                    pwm.ChangeDutyCycle(100)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time

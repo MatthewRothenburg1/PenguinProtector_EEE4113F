@@ -29,7 +29,7 @@ SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For depl
 
 def compress_video(input_path, output_path):
     subprocess.run([
-        "ffmpeg", "-overwrite,"-i", input_path,
+        "ffmpeg", "-y","-i", input_path,
         "-vcodec", "libx264", "-crf", "28",  # Adjust CRF for more compression
         "-preset", "fast",
         output_path], check=True)

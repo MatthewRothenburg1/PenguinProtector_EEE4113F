@@ -252,7 +252,7 @@ for i in range(10):
     textToOled("Arming in " + str(10-i))
     time.sleep(1)
 
-
+prev_detection_time = 0
 try:
     while True:
 
@@ -260,8 +260,10 @@ try:
         clear_Oled()
         textToOled("ARMED\n" + dots*".")
         dots = (dots + 1) % 10  # Cycle from 0 to 3
-        if(GPIO.input(PIR_PIN) == GPIO.HIGH):
-            on_PIR()
+        if(current_time - prev_detection_time > 5):
+            if(GPIO.input(PIR_PIN) == GPIO.HIGH):
+                prev_time_stream = current_time
+                on_PIR()
         
         if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()

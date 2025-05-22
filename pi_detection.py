@@ -252,16 +252,16 @@ try:
             while(stream_state):
                 clear_Oled()
                 textToOled("Streaming" + dots*".")
-                dots += 1 % 3
+                dots = (dots + 1) % 3
                 current_time = time.time()
                 stream_state = fetchStreamState()
-                if(current_time - STREAM_START_TIME > 200):
+                if(current_time - STREAM_START_TIME > 40):
                     clear_Oled()
                     setStreamState(False)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time
-
+            time.sleep(0.1)
 
             
 except KeyboardInterrupt:

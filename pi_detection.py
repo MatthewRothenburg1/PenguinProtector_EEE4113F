@@ -116,7 +116,7 @@ def uploadToStream(frame):
         return None
 
 def on_PIR():
-    global PIR_STATE, triggered, picam2
+    global  triggered, picam2
 
     try:
         clear_Oled()
@@ -148,14 +148,13 @@ def on_PIR():
                     picam2.stop_recording()
                 except Exception as e:
                     print("Camera recording error:", e)
-                    PIR_STATE = False
+                    
                     return
 
                 try:
                     subprocess.run(["MP4Box", "-add", video_path, mp4_path], check=True)
                 except subprocess.CalledProcessError as e:
                     print("MP4Box failed:", e)
-                    PIR_STATE = False
                     return
 
                 if os.path.exists(mp4_path):

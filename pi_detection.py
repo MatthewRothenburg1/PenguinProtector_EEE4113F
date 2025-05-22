@@ -22,6 +22,7 @@ SERVER_POLL_TIME = 0.5
 
 
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+#SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
 
@@ -31,8 +32,7 @@ def compress_video(input_path, output_path):
         "ffmpeg", "-overwrite,"-i", input_path,
         "-vcodec", "libx264", "-crf", "28",  # Adjust CRF for more compression
         "-preset", "fast",
-        output_path
-    ], check=True)
+        output_path], check=True)
 
 
 def get_network_info():

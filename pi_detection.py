@@ -14,10 +14,13 @@ from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
+
 # === Configuration ===
 PIR_PIN = 22
 BUTTON_PIN = 27
-
+IR_PIN = 18              # PWM-capable pin (GPIO18 = physical pin 12)
+PWM_FREQ = 2000          # 2kHz
+DUTY_CYCLE = 50 
 SERVER_POLL_TIME = 0.5
 
 
@@ -137,6 +140,7 @@ def uploadToStream(frame):
 
 def on_PIR():
     global triggered, picam2
+    set_ir_led_state()
     print("2")
     try:
         clear_Oled()
@@ -166,12 +170,15 @@ def on_PIR():
 
                 encoder = H264Encoder()
                 output = FileOutput(video_path)
+                
                 try:
                     picam2.start_recording(encoder, output)
                     clear_Oled()
                     textToOled("Taking Video")
                     time.sleep(5)
                     picam2.stop_recording()
+                    # Always turn off IR LEDs after motion event
+                    pwm.ChangeDutyCycle(0)
                 except Exception as e:
                     print("Camera recording error:", e)
                     return
@@ -241,6 +248,12 @@ def textToOled(text):
     draw.text((10, 10), text, font=font, fill=255)
     oled_screen.display(oled_image)
 
+def set_ir_led_state():
+    if IR_STATE:
+        pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
+    else:
+        pwm.ChangeDutyCycle(0)           # Turn OFF
+
 print("Starting up...")
 print("Beggining setup...")
 
@@ -262,8 +275,10 @@ print("Oled Initialised")
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIR_PIN, GPIO.IN)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(IR_PIN, GPIO.OUT)
+pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
+pwm.start(0)  # Start OFF initially
 
 print("Initialisng Camera")
 picam2 = Picamera2()
@@ -328,12 +343,15 @@ try:
             while(stream_state):
                 clear_Oled()
                 textToOled("Streaming" + dots*".")
+                # Turn on IR LEDs if it's dark
+                set_ir_led_state()
                 dots = (dots + 1) % 3
                 current_time = time.time()
                 stream_state = fetchStreamState()
                 if(current_time - STREAM_START_TIME > 40):
                     clear_Oled()
                     setStreamState(SERVER_URL,False)
+                    pwm.ChangeDutyCycle(0)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time

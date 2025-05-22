@@ -127,6 +127,9 @@ def on_PIR():
         textToOled("Motion Detected")
         print("3")
         frame = take_photo()
+	if frame is None:
+	    return
+
         print("4")
         result = upload_image(frame)
         print("5")
@@ -272,7 +275,7 @@ try:
                 print("1")
                 on_PIR()
                 print("done")
-                prev_detection_stream = current_time
+                prev_detection_time = current_time
         
         if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()

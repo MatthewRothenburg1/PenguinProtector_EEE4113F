@@ -30,6 +30,13 @@ SERVER_POLL_TIME = 0.5
 SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
+GPIO.setup(IR_PIN, GPIO.OUT)
+
+# Set the pin HIGH
+GPIO.output(IR_PIN, GPIO.HIGH)
+time.sleep(10)
+GPIO.output(IR_PIN, GPIO.LOW)
+time.sleep(10)
 
 
 def compress_video(input_path, output_path):

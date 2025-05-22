@@ -20,8 +20,8 @@ BUTTON_PIN = 27
 SERVER_POLL_TIME = 0.5
 
 
-#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
-SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
+SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
 
 def get_network_info():
@@ -89,7 +89,7 @@ def setStreamState(state):
         bool: True if the state was successfully set, False otherwise.
     """
     try:
-        response = requests.post(f"{SERVER_URL}/set_streaming_state", json={"value": state})
+        response = requests.post(f"{SERVER_URL}/set_streaming_state?value="+state)
         if response.status_code == 200:
             print(f"Streaming state set to '{state}'.")
             return True
@@ -229,7 +229,7 @@ time.sleep(0.5)
 
 for i in range(10):
     clear_Oled()
-    textToOled("Arming in " + str(5-i))
+    textToOled("Arming in " + str(10-i))
     time.sleep(1)
 
 

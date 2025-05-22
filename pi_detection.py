@@ -21,8 +21,8 @@ BUTTON_PIN = 27
 SERVER_POLL_TIME = 0.5
 
 
-SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
-#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
+#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 
 
 def get_network_info():

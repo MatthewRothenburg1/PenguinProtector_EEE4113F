@@ -21,6 +21,8 @@ BUTTON_PIN = 27
 SERVER_POLL_TIME = 0.5
 
 
+
+
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 #SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
@@ -199,6 +201,17 @@ def on_PIR():
     finally:
         time.sleep(2)
 
+def get_IR_state():
+    global IR_STATE
+    try:
+        ir_response = requests.get(f"{SERVER_URL}/get_ir_state")
+        if ir_response.status_code == 200:
+            IR_STATE = ir_response.json().get("ir_state", False)
+            print(f"Updated IR_STATE: {IR_STATE}")
+        else:
+            print(f"Failed to get IR state. Status code: {ir_response.status_code}")
+    except requests.RequestException as e:
+        print("Error fetching IR state:", e)
 
 
 # === Upload Video ===
@@ -282,7 +295,11 @@ for i in range(10):
     textToOled("Arming in " + str(10-i))
     time.sleep(1)
 
+IR_STATE = False
+prev_time_ir_check = 0 
 prev_detection_time = 0
+IR_CHECK_INTERVAL = 1800  # 30 minutes in seconds
+
 try:
     while True:
 
@@ -296,6 +313,11 @@ try:
                 on_PIR()
                 print("done")
                 prev_detection_time = current_time
+        # Check if it's time to update the IR state
+        if current_time - prev_time_ir_check > IR_CHECK_INTERVAL:
+            get_IR_state()
+            prev_time_ir_check = current_time
+
         
         if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()
@@ -317,6 +339,8 @@ try:
             prev_time_stream = current_time
             time.sleep(0.1)
         time.sleep(1)
+
+
             
 except KeyboardInterrupt:
     print("\nExiting. Cleaning up...")

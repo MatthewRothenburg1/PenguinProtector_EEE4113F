@@ -243,7 +243,7 @@ try:
         if(GPIO.input(PIR_PIN) == GPIO.HIGH):
             on_PIR()
         
-        if(current_time - prev_time_stream > 30):
+        if(current_time - prev_time_stream > 1):
             stream_state = fetchStreamState()
             print(stream_state)
             if stream_state is True:
@@ -257,8 +257,7 @@ try:
                 stream_state = fetchStreamState()
                 if(current_time - STREAM_START_TIME > 200):
                     clear_Oled()
-                    stream_state = False
-                    setStreamState("off")
+                    setStreamState(False)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time

@@ -26,19 +26,11 @@ SERVER_POLL_TIME = 0.5
 
 
 
-#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
-SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
+SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+#SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
-
-# Set the pin HIGH
-print("IR High")
-GPIO.output(IR_PIN, GPIO.HIGH)
-time.sleep(10)
-print("IR Low")
-GPIO.output(IR_PIN, GPIO.LOW)
-time.sleep(10)
 
 
 def compress_video(input_path, output_path):
@@ -302,15 +294,43 @@ time.sleep(0.5)
 
 prev_time_stream = 0
 dots = 0
+
+
+IR_STATE = False
+prev_time_ir_check = 0 
+prev_detection_time = 0
+IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
+current_time = time.time()
+
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     clear_Oled()
     network_info = get_network_info()
     textToOled(network_info + "."*dots + "\nPress Button to Arm")
     dots = (dots + 1) % 4  # Cycle from 0 to 3
-
-
     print(network_info)
     time.sleep(0.5)
+    if(current_time - prev_time_stream > 5):
+        stream_state = fetchStreamState()
+        print(stream_state)
+        if stream_state is True:
+            STREAM_START_TIME = current_time
+        dots = 0
+        while(stream_state):
+            clear_Oled()
+            textToOled("Streaming" + dots*".")
+            # Turn on IR LEDs if it's dark
+            set_ir_led_state()
+            dots = (dots + 1) % 3
+            current_time = time.time()
+            stream_state = fetchStreamState()
+            if(current_time - STREAM_START_TIME > 40):
+                clear_Oled()
+                setStreamState(SERVER_URL,False)
+                pwm.ChangeDutyCycle(0)
+            frame = take_photo()
+            uploadToStream(frame)
+        prev_time_stream = current_time
+
 
 textToOled("Starting Detction")
 time.sleep(0.5)
@@ -320,10 +340,6 @@ for i in range(10):
     textToOled("Arming in " + str(10-i))
     time.sleep(1)
 
-IR_STATE = False
-prev_time_ir_check = 0 
-prev_detection_time = 0
-IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
 
 try:
     while True:
@@ -365,7 +381,6 @@ try:
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time
-            time.sleep(0.1)
         time.sleep(1)
 
 

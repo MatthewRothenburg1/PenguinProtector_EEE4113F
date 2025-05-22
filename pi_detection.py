@@ -29,7 +29,7 @@ SERVER_POLL_TIME = 0.5
 #SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
 SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
-
+GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 
 # Set the pin HIGH
@@ -261,7 +261,7 @@ def set_ir_led_state():
     if IR_STATE:
         pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
     else:
-        pwm.ChangeDutyCycle(100)           # Turn OFF
+        pwm.ChangeDutyCycle(0)           # Turn OFF
 
 print("Starting up...")
 print("Beggining setup...")
@@ -287,7 +287,7 @@ GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
-pwm.start(100)  # Start OFF initially
+pwm.start(0)  # Start OFF initially
 
 print("Initialisng Camera")
 picam2 = Picamera2()
@@ -361,7 +361,7 @@ try:
                 if(current_time - STREAM_START_TIME > 40):
                     clear_Oled()
                     setStreamState(SERVER_URL,False)
-                    pwm.ChangeDutyCycle(100)
+                    pwm.ChangeDutyCycle(0)
                 frame = take_photo()
                 uploadToStream(frame)
             prev_time_stream = current_time

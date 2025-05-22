@@ -142,7 +142,7 @@ def on_PIR():
 
             # Upload video
             upload_video(mp4_path, response_id, triggered)
-            update_Oled("Upload Complete")
+            
 
         else:
             print("No animal detected. Skipping video. Starting cooldown...")
@@ -227,24 +227,36 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
 textToOled("Starting Detction")
 time.sleep(0.5)
 
+for i in range(10):
+    clear_Oled()
+    textToOled("Arming in " + str(5-i))
+    time.sleep(1)
+
 
 try:
     while True:
 
         current_time = time.time()
+        clear_Oled()
+        textToOled("ARMED\nPress Button to Disarm")
 
         if(GPIO.input(PIR_PIN) == GPIO.HIGH):
             on_PIR()
         
         if(current_time - prev_time_stream > 30):
             stream_state = fetchStreamState()
-            
+            print(stream_state)
             if stream_state is True:
                 STREAM_START_TIME = current_time
+            dots = 0
             while(stream_state):
+                clear_Oled()
+                textToOled("Streaming" + dots*".")
+                dots += 1 % 3
                 current_time = time.time()
                 stream_state = fetchStreamState()
                 if(current_time - STREAM_START_TIME > 200):
+                    clear_Oled()
                     stream_state = False
                     setStreamState("off")
                 frame = take_photo()

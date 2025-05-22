@@ -46,6 +46,7 @@ def deterrent():
 
 #Take photo
 def take_photo():
+    picam2.switch_mode(still_config)
     print("Taking photo...")
     # Capture photo
     try:
@@ -142,6 +143,7 @@ def on_PIR():
             print(f"Image uploaded with ID: {response_id}")
             print(result)
             if result.get("detection") == True:
+                picam2.switch_mode(video_config)
                 triggered = "true"
                 deterrent()
                 clear_Oled()
@@ -152,7 +154,6 @@ def on_PIR():
 
                 encoder = H264Encoder()
                 output = FileOutput(video_path)
-
                 try:
                     picam2.start_recording(encoder, output)
                     clear_Oled()
@@ -239,8 +240,10 @@ GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 print("Initialisng Camera")
-
 picam2 = Picamera2()
+still_config = picam2.create_still_configuration()
+video_config = picam2.create_video_configuration()
+picam2.configure(still_config)
 picam2.start()
 time.sleep(1)  # Warm-up
 textToOled("Camera Initialised")

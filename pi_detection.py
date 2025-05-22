@@ -47,7 +47,11 @@ def deterrent():
 #Take photo
 def take_photo():
     # Capture photo
-    frame = picam2.capture_array()
+    try:
+        frame = picam2.capture_array()
+    except Exception as e:
+        print("Error capturing photo:", e)
+        frame = None
     return frame
 
 # === Upload Image ===
@@ -268,7 +272,7 @@ try:
                 print("1")
                 on_PIR()
                 print("done")
-                prev_time_stream = current_time
+                prev_detection_stream = current_time
         
         if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()

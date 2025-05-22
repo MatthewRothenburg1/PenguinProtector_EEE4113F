@@ -417,7 +417,7 @@ def index(request: Request):
 LAT = -34.454189  # 34°27’15.08” S
 LON = 20.399619   # 20°23’58.63” E
 
-@app.get("/ir_should_be_on")
+@app.get("/get_ir_state")
 def should_ir_be_on():
     try:
         # 1. Get current UTC time

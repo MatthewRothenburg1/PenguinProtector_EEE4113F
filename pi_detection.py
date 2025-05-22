@@ -300,7 +300,7 @@ IR_STATE = False
 prev_time_ir_check = 0 
 prev_detection_time = 0
 IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
-current_time = time.time()
+
 
 while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     clear_Oled()
@@ -309,6 +309,7 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
     dots = (dots + 1) % 4  # Cycle from 0 to 3
     print(network_info)
     time.sleep(0.5)
+    current_time = time.time()
     if(current_time - prev_time_stream > 5):
         stream_state = fetchStreamState()
         print(stream_state)

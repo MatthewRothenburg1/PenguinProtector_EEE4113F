@@ -46,12 +46,15 @@ def deterrent():
 
 #Take photo
 def take_photo():
+    print("Taking photo...")
     # Capture photo
     try:
         frame = picam2.capture_array()
+        print("Photo captured.")
     except Exception as e:
         print("Error capturing photo:", e)
-        frame = None
+        return None
+    print("Photo taken.")
     return frame
 
 # === Upload Image ===

@@ -176,7 +176,9 @@ def on_PIR():
                 triggered = "false"
         else:
             print("Skipping video upload due to failed image upload.")
-
+    except Exception as e:
+        print("Error in on_PIR:", e)
+        return
     finally:
         time.sleep(2)
 

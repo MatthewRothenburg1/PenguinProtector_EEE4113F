@@ -117,14 +117,17 @@ def uploadToStream(frame):
 
 def on_PIR():
     global  triggered, picam2
-
+    print("2")
     try:
         clear_Oled()
         textToOled("Motion Detected")
+        print("3")
         frame = take_photo()
+        print("4")
         result = upload_image(frame)
-
+        print("5")
         if result and "ID" in result:
+            print("6")
             response_id = result["ID"]
             print(f"Image uploaded with ID: {response_id}")
             print(result)
@@ -262,7 +265,9 @@ try:
         dots = (dots + 1) % 10  # Cycle from 0 to 3
         if(current_time - prev_detection_time > 60):
             if(GPIO.input(PIR_PIN) == GPIO.HIGH):
+                print("1")
                 on_PIR()
+                print("done")
                 prev_time_stream = current_time
         
         if(current_time - prev_time_stream > 5):

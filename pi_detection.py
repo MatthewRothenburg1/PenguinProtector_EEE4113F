@@ -262,8 +262,8 @@ try:
         dots = (dots + 1) % 10  # Cycle from 0 to 3
         if(current_time - prev_detection_time > 60):
             if(GPIO.input(PIR_PIN) == GPIO.HIGH):
-                prev_time_stream = current_time
                 on_PIR()
+                prev_time_stream = current_time
         
         if(current_time - prev_time_stream > 5):
             stream_state = fetchStreamState()

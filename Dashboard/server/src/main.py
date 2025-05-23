@@ -25,7 +25,7 @@ import time
 import uuid
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from google.cloud import vision
 from google.oauth2 import service_account # type: ignore
 from googleapiclient.discovery import build # type: ignore
@@ -421,7 +421,7 @@ LON = 20.399619   # 20°23’58.63” E
 def should_ir_be_on():
     try:
         # 1. Get current UTC time
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(timezone.utc)
 
         # 2. Get sunrise and sunset from sunrise-sunset.org API
         response = requests.get(
@@ -433,8 +433,8 @@ def should_ir_be_on():
         if data["status"] != "OK":
             return {"error": "Could not retrieve sunrise/sunset data"}
 
-        sunrise = datetime.fromisoformat(data["results"]["sunrise"])
-        sunset = datetime.fromisoformat(data["results"]["sunset"])
+        sunrise = datetime.fromisoformat(data["results"]["sunrise"]).astimezone(timezone.utc)
+        sunset = datetime.fromisoformat(data["results"]["sunset"]).astimezone(timezone.utc)
 
         # 3. Add buffer
         sunrise_buffer = sunrise - timedelta(minutes=30)

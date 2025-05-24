@@ -25,6 +25,10 @@ import time
 import uuid
 
 from zoneinfo import ZoneInfo
+
+
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 from google.cloud import vision
 from google.oauth2 import service_account # type: ignore
@@ -144,15 +148,16 @@ def upload_image_to_vision(file_stream):
 def get_number_of_detections():
     RANGE = "Sheet1!B:C"  #Columns of Time and Detection State
     
+    #Fetch columns B and C from the Google Sheet
     response = sheets_service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID,
         range=RANGE
     ).execute()
 
     rows = response.get("values", [])
-
+    
     # Get current time
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     # Time periods
     one_hour_ago = now - timedelta(hours=1)
@@ -175,6 +180,8 @@ def get_number_of_detections():
 
         try:
             timestamp = datetime.fromisoformat(row[0])
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
         except ValueError:
             continue
 
@@ -331,6 +338,17 @@ def upload_video_and_detterent_to_sheets(ID,  deterrent, video_link):
 ###############################################################################################
 # FastAPI Routes
 ###############################################################################################
+@app.get("/detection_stats")
+async def detection_stats():
+    try:
+        counts = get_number_of_detections()  # Get the counts from Google Sheets
+        return JSONResponse(content=counts)
+    except Exception as e:
+        print(f"Error in /detection_stats: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+
 
 @app.post("/upload_to_vision")
 async def upload_to_vision(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):

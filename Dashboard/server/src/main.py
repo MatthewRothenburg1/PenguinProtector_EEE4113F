@@ -454,7 +454,7 @@ def should_ir_be_on():
 def detection_stats():
     try:
         counts = get_number_of_detections()
-        return JSONResponse(content=counts)
+        return counts
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 

@@ -184,6 +184,9 @@ def on_PIR():
             print(f"Image uploaded with ID: {response_id}")
             print(result)
             if result.get("detection") == True:
+                for path in ["/tmp/motion_video.h264", "/tmp/motion_video.mp4", "/tmp/motion_video_compressed.mp4"]:
+                    if os.path.exists(path):
+                        os.remove(path)
                 picam2.switch_mode(video_config)
                 triggered = "true"
                 deterrent()
@@ -231,7 +234,9 @@ def on_PIR():
         print("Error in on_PIR:", e)
         return
     finally:
-        time.sleep(2)
+        # Always turn off IR LEDs after motion event
+        pwm.ChangeDutyCycle(0)
+        picam2.switch_mode(still_config)
 
 def get_IR_state():
     global IR_STATE

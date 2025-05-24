@@ -77,6 +77,7 @@ def take_photo():
 
 # === Upload Image ===
 def upload_image(frame, max_retries=5, backoff_factor=1.5):
+    clear_Oled()
     textToOled("Uploading Image")
     _, jpeg = cv2.imencode(".jpg", frame)
     image_bytes_io = io.BytesIO(jpeg.tobytes())
@@ -84,7 +85,7 @@ def upload_image(frame, max_retries=5, backoff_factor=1.5):
 
     for attempt in range(1, max_retries + 1):
         try:
-            
+            clear_Oled()
             textToOled(f"Uploading Image\nAttempt {attempt}")
             response = requests.post(
                 f"{SERVER_URL}/upload_to_vision",
@@ -92,12 +93,14 @@ def upload_image(frame, max_retries=5, backoff_factor=1.5):
                 timeout=10  # Optional: to prevent hanging forever
             )
             if response.status_code == 200:
+                clear_Oled()
                 textToOled("Upload Successful")
                 return response.json()
                 
             else:
                 print(f"Attempt {attempt}: Upload failed with status {response.status_code} - {response.text}")
                 textToOled("Failed to Upload Image")
+                time.sleep(0.5)
         except requests.RequestException as e:
             print(f"Attempt {attempt}: Exception occurred - {e}")
         

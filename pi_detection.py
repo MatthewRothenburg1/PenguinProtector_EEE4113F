@@ -84,6 +84,7 @@ def upload_image(frame, max_retries=5, backoff_factor=1.5):
 
     for attempt in range(1, max_retries + 1):
         try:
+            
             textToOled(f"Uploading Image\nAttempt {attempt}")
             response = requests.post(
                 f"{SERVER_URL}/upload_to_vision",
@@ -335,14 +336,15 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
         print(stream_state)
         if stream_state is True:
             STREAM_START_TIME = current_time
-            pwm.ChangeDutyCycle(100)
         dots = 0
+        brightness = 0
         while(stream_state):
             clear_Oled()
             textToOled("Streaming" + dots*".")
             # Turn on IR LEDs if it's dark
             #set_ir_led_state()
-            
+            pwm.ChangeDutyCycle(brightness)
+            brightness = (brightness + 1) % 100
             dots = (dots + 1) % 3
             current_time = time.time()
             stream_state = fetchStreamState()

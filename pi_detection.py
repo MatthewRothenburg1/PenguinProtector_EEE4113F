@@ -37,7 +37,8 @@ def compress_video(input_path, output_path):
     subprocess.run([
         "ffmpeg", "-y","-i", input_path,
         "-vcodec", "libx264", "-crf", "28",  # Adjust CRF for more compression
-        "-preset", "fast",
+        "-preset", "ultrafast",
+        "-acodec", "copy",
         output_path], check=True)
 
 
@@ -75,18 +76,37 @@ def take_photo():
     return frame
 
 # === Upload Image ===
-def upload_image(frame):
+def upload_image(frame, max_retries=5, backoff_factor=1.5):
+    textToOled("Uploading Image")
     _, jpeg = cv2.imencode(".jpg", frame)
     image_bytes_io = io.BytesIO(jpeg.tobytes())
-    response = requests.post(
-        f"{SERVER_URL}/upload_to_vision",
-        files={"file": ("photo.jpg", image_bytes_io.getvalue(), "image/jpeg")}
-    )
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print("Image upload failed:", response.text)
-        return None
+    files = {"file": ("photo.jpg", image_bytes_io.getvalue(), "image/jpeg")}
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            textToOled(f"Uploading Image\nAttempt {attempt}")
+            response = requests.post(
+                f"{SERVER_URL}/upload_to_vision",
+                files=files,
+                timeout=10  # Optional: to prevent hanging forever
+            )
+            if response.status_code == 200:
+                textToOled("Upload Successful")
+                return response.json()
+                
+            else:
+                print(f"Attempt {attempt}: Upload failed with status {response.status_code} - {response.text}")
+                textToOled("Failed to Upload Image")
+        except requests.RequestException as e:
+            print(f"Attempt {attempt}: Exception occurred - {e}")
+        
+        if attempt < max_retries:
+            sleep_time = backoff_factor ** attempt
+            print(f"Retrying in {sleep_time:.1f} seconds...")
+            time.sleep(sleep_time)
+
+    print("Image upload failed after multiple attempts.")
+    return None
 
 
 def fetchStreamState():

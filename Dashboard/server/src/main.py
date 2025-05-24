@@ -24,7 +24,7 @@ import asyncio
 import time
 import uuid
 
-
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 from google.cloud import vision
 from google.oauth2 import service_account # type: ignore
@@ -241,7 +241,8 @@ def on_detection(file_bytes: BytesIO, results, ID):
         send_photo_to_user(file_bytes, "Honey Badger!!! Activating Penguin Protector. May need backup.") #If the detction state is true send a notification to the user over telegram.
 
     photo_drive_link =   upload_to_drive(file_bytes, ID +'.jpg') #Upload the image to Google Drive and store the link
-    detection_time = datetime.now().replace(microsecond=0).isoformat()
+    local_time = datetime.now(ZoneInfo("Africa/Johannesburg")).replace(microsecond=0)
+    detection_time = local_time.isoformat()
     upload_time_and_ID_to_sheets(ID, detection_time, results, photo_drive_link) #Upload the time and ID to Google Sheets
     return
 
@@ -448,6 +449,14 @@ def should_ir_be_on():
     except Exception as e:
         return {"error": str(e)}
 
+
+@app.get("/detection_stats")
+def detection_stats():
+    try:
+        counts = get_number_of_detections()
+        return JSONResponse(content=counts)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 ###############################################################################################
 # Run using: uvicorn main:app --host 0.0.0.0 --port 8080

@@ -1,6 +1,6 @@
 
-const url = "https://flask-fire-837838013707.africa-south1.run.app/";
-//const url = "http://127.0.0.1:8080/";
+//const url = "https://flask-fire-837838013707.africa-south1.run.app/";
+const url = "http://127.0.0.1:8080/";
 
 let isStreaming = false;
 

@@ -351,8 +351,7 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
             textToOled("Streaming" + dots*".")
             # Turn on IR LEDs if it's dark
             #set_ir_led_state()
-            pwm.ChangeDutyCycle(brightness)
-            brightness = (brightness + 1) % 100
+            pwm.ChangeDutyCycle(100)
             dots = (dots + 1) % 3
             current_time = time.time()
             stream_state = fetchStreamState()

@@ -26,9 +26,9 @@ SERVER_POLL_TIME = 0.5
 
 
 
-#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
-SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployment
+#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 
@@ -165,18 +165,25 @@ def uploadToStream(frame):
 
 def on_PIR():
     global triggered, picam2
-    set_ir_led_state()
+    #set_ir_led_state()
+    pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
     print("2")
     try:
         clear_Oled()
         textToOled("Motion Detected")
         print("3")
+        start = time.time()
+        start_photo = time.time()
         frame = take_photo()
+        end_photo= time.time()
         if frame is None:
             return
 
         print("4")
         result = upload_image(frame)
+        end = time.time()
+        print(f"[Get Response] Elapsed time: {end - start:.6f} seconds")
+        print(f"[Take Photo] Elapsed time: {end_photo - start_photo:.6f} seconds")
         print("5")
         if result and "ID" in result:
             print("6")
@@ -206,7 +213,7 @@ def on_PIR():
                     time.sleep(5)
                     picam2.stop_recording()
                     # Always turn off IR LEDs after motion event
-                    pwm.ChangeDutyCycle(100)
+                    pwm.ChangeDutyCycle(0)
                 except Exception as e:
                     print("Camera recording error:", e)
                     return

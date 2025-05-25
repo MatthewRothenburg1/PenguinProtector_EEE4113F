@@ -363,6 +363,7 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
         dots = 0
         brightness = 0
         fps_time = 0
+        fps = 0
         while(stream_state):
             clear_Oled()
             textToOled("Streaming" + dots*".")
@@ -420,6 +421,7 @@ try:
                 STREAM_START_TIME = current_time
             dots = 0
             fps_time = 0
+            fps = 0
             while(stream_state):
                 clear_Oled()
                 textToOled("Streaming" + dots*".")

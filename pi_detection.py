@@ -26,9 +26,9 @@ SERVER_POLL_TIME = 0.5
 
 
 
-SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
+#SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
-#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
+SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 

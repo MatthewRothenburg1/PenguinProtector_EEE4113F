@@ -382,7 +382,7 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
                 pwm.ChangeDutyCycle(0)
             frame = take_photo()
             uploadToStream(frame)
-        prev_time_stream = current_time
+        prev_time_stream = current_time 
 
 
 textToOled("Starting Detction")

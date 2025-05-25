@@ -306,10 +306,24 @@ oled_screen = ssd1306(oled_i2c)
 oled_image = Image.new("1", oled_screen.size)
 draw = ImageDraw.Draw(oled_image)
 font = ImageFont.load_default()
-oled_screen.clear()
+clear_Oled()
 textToOled("Starting up...")
 
 print("Oled Initialised")
+
+clear_Oled()
+textToOled("Response from server:\n Connection Successful")
+time.sleep(10)
+clear_Oled()
+textToOled("Rebooting....")
+time.sleep(10)
+clear_Oled()
+textToOled("Picture Uploaded Successfully")
+time.sleep(10)
+clear_Oled()
+textToOled("Video Uploaded Successfully")
+time.sleep(10)
+
 
 # === GPIO Setup ===
 GPIO.setmode(GPIO.BCM)

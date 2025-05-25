@@ -409,7 +409,7 @@ try:
         clear_Oled()
         textToOled("ARMED\n" + dots*".")
         dots = (dots + 1) % 10  # Cycle from 0 to 3
-        if(current_time - prev_detection_time > 60):
+        if(current_time - prev_detection_time > 10):
             if(GPIO.input(PIR_PIN) == GPIO.HIGH):
                 print("1")
                 on_PIR()
@@ -427,6 +427,7 @@ try:
             if stream_state is True:
                 STREAM_START_TIME = current_time
             dots = 0
+            fps_time = 0
             while(stream_state):
                 clear_Oled()
                 textToOled("Streaming" + dots*".")
@@ -435,7 +436,13 @@ try:
                 dots = (dots + 1) % 3
                 current_time = time.time()
                 stream_state = fetchStreamState()
-                if(current_time - STREAM_START_TIME > 40):
+                fps = fps + 1
+                if(current_time - fps_time > 1):
+                    print(f"FPS: {fps}")
+                    fps_time = current_time
+                    fps = 0
+                    
+                if(current_time - STREAM_START_TIME > 200):
                     clear_Oled()
                     setStreamState(SERVER_URL,False)
                     pwm.ChangeDutyCycle(0)

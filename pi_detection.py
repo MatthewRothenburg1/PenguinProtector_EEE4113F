@@ -31,13 +31,8 @@ SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
-pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
 
-pwm.ChangeDutyCycle(DUTY_CYCLE)
-print("IR's on")
-time.sleep(3)
-pwm.ChangeDutyCycle(DUTY_CYCLE)
-print("IR's off")
+
 
 def compress_video(input_path, output_path):
     subprocess.run([
@@ -324,6 +319,11 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
 pwm.start(0)  # Start OFF initially
+pwm.ChangeDutyCycle(DUTY_CYCLE)
+print("IR's on")
+time.sleep(3)
+pwm.ChangeDutyCycle(0)
+print("IR's off")
 
 print("Initialisng Camera")
 picam2 = Picamera2()

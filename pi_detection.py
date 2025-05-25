@@ -362,15 +362,20 @@ while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
             STREAM_START_TIME = current_time
         dots = 0
         brightness = 0
+        fps_time = 0
         while(stream_state):
             clear_Oled()
             textToOled("Streaming" + dots*".")
             # Turn on IR LEDs if it's dark
-            #set_ir_led_state()
-            pwm.ChangeDutyCycle(100)
+            set_ir_led_state()
             dots = (dots + 1) % 3
             current_time = time.time()
             stream_state = fetchStreamState()
+            fps = fps + 1
+            if(current_time - fps_time > 1):
+                print(f"FPS: {fps}")
+                fps_time = current_time
+                fps = 0
             if(current_time - STREAM_START_TIME > 40):
                 clear_Oled()
                 setStreamState(SERVER_URL,False)

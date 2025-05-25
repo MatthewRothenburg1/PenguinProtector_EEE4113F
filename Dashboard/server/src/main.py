@@ -95,8 +95,9 @@ VIDEOS_ID = '14Si2Uevxrns5bMSnfFt_AJANKfkSgbMj'  # PenguinProtector/Videos
 SPREADSHEET_ID = '1RDzJ9jUoakI7AXR_NkeoroyjYiuy4Nq-OaEe4I-Ouvs' #Spreadsheet ID for Google Sheets
 
 # Upload image to Google Drive
-def upload_to_drive(file_stream, filename):
-    mimetype = 'image/jpeg'  #Format for upload
+# Upload image to Google Drive with retry logic
+def upload_to_drive(file_stream, filename, max_retries=3, delay=2):
+    mimetype = 'image/jpeg'  # Format for upload
 
     file_metadata = {
         'name': filename,
@@ -104,18 +105,27 @@ def upload_to_drive(file_stream, filename):
     }
     media = MediaIoBaseUpload(file_stream, mimetype=mimetype)
 
-    uploaded_file = drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id'
-    ).execute()
+    for attempt in range(max_retries):
+        try:
+            uploaded_file = drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
 
-    file_id = uploaded_file.get('id') #Get the file ID of the uploaded file
+            file_id = uploaded_file.get('id')  # Get the file ID of the uploaded file
+            return f'https://drive.google.com/file/d/{file_id}/preview'  # Return the photo preview link
 
-    return f'https://drive.google.com/file/d/{file_id}/preview' #Return the link to the photo preview
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed to upload to Drive: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                print("All upload attempts to Google Drive failed.")
+                return None
 
-# Upload video to Google Drive (Placeholder)
-def upload_video_to_drive(file_stream, filename):
+# Upload video to Google Drive with retry logic
+def upload_video_to_drive(file_stream, filename, max_retries=3, delay=2):
     mimetype = 'video/mp4'
     file_metadata = {
         'name': filename,
@@ -123,27 +133,43 @@ def upload_video_to_drive(file_stream, filename):
     }
     media = MediaIoBaseUpload(file_stream, mimetype=mimetype)
 
-    uploaded_file = drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id'
-    ).execute()
+    for attempt in range(max_retries):
+        try:
+            uploaded_file = drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
 
-    file_id = uploaded_file.get('id') #Get the file ID of the uploaded file
+            file_id = uploaded_file.get('id')  # Get the file ID of the uploaded file
+            return f'https://drive.google.com/file/d/{file_id}/preview'  # Return the video preview link
 
-    return f'https://drive.google.com/file/d/{file_id}/preview' #Return the link to the video preview
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed to upload video to Drive: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                print("All upload attempts for video failed.")
+                return None
 
-def upload_image_to_vision(file_stream):
-    
+# Upload image to Google Cloud Vision with retry logic
+def upload_image_to_vision(file_stream, max_retries=3, delay=2):
     # Read image content
     content = file_stream.read()
     image = vision.Image(content=content)
 
-    response = vision_client.object_localization(image=image)
-    # Access the localized_object_annotations properly using dot notation
-    objects = response.localized_object_annotations
-
-    return objects
+    for attempt in range(max_retries):
+        try:
+            response = vision_client.object_localization(image=image)
+            objects = response.localized_object_annotations
+            return objects  # Return the detected objects list
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed to process image with Vision API: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                print("All Vision API attempts failed.")
+                return None
 
 def get_number_of_detections():
     RANGE = "Sheet1!B:C"  #Columns of Time and Detection State
@@ -249,7 +275,7 @@ def on_detection(file_bytes: BytesIO, results, ID):
 
     photo_drive_link =   upload_to_drive(file_bytes, ID +'.jpg') #Upload the image to Google Drive and store the link
     local_time = datetime.now(ZoneInfo("Africa/Johannesburg")).replace(microsecond=0)
-    detection_time = local_time.isoformat()
+    detection_time = local_time.replace(tzinfo=None).isoformat()
     upload_time_and_ID_to_sheets(ID, detection_time, results, photo_drive_link) #Upload the time and ID to Google Sheets
     return
 
@@ -279,31 +305,35 @@ def send_photo_to_user(photo: BytesIO, caption: str = ''):
     else:
         print(f"Failed to send photo. Error: {response.text}")
 
-# Upload data to Google Sheets
-def upload_time_and_ID_to_sheets(ID, time_taken, results, photo_link):
-    
+def upload_time_and_ID_to_sheets(ID, time_taken, results, photo_link, max_retries=3, delay=2):
     sheet_range = 'Sheet1!A:D'  # Sheet name and columns A to D
-    
+
     # Prepare the data row to append
     # 'results' is a boolean — we store "Detection" or "No Detection"
     values = [
         [ID, time_taken, results, photo_link]
     ]
-    
+
     body = {
         'values': values
     }
 
-    try:
-        sheets_service.spreadsheets().values().append(
-            spreadsheetId=SPREADSHEET_ID,
-            range=sheet_range,
-            valueInputOption='RAW',
-            body=body
-        ).execute()
-    except Exception as e:
-        print(f"Error uploading to Sheets: {e}")
-    return
+    for attempt in range(max_retries):
+        try:
+            sheets_service.spreadsheets().values().append(
+                spreadsheetId=SPREADSHEET_ID,
+                range=sheet_range,
+                valueInputOption='RAW',
+                body=body
+            ).execute()
+            print("Upload successful.")
+            break  # Exit loop if successful
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                print("All upload attempts failed.")
 
 def upload_video_and_detterent_to_sheets(ID,  deterrent, video_link):
     try:

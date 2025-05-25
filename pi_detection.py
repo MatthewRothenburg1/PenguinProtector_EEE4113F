@@ -20,7 +20,7 @@ PIR_PIN = 22
 BUTTON_PIN = 27
 IR_PIN = 13              
 PWM_FREQ = 2000          # 2kHz
-DUTY_CYCLE = 50 
+DUTY_CYCLE = 100 
 SERVER_POLL_TIME = 0.5
 
 

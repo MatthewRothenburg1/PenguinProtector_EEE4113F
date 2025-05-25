@@ -26,9 +26,9 @@ SERVER_POLL_TIME = 0.5
 
 
 
-#SERVER_URL = "http://192.168.3.146:8080"  # Local testing server
+SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
-SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
+#SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
 
@@ -166,17 +166,21 @@ def uploadToStream(frame):
 def on_PIR():
     global triggered, picam2
     set_ir_led_state()
+    pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
     print("2")
     try:
         clear_Oled()
         textToOled("Motion Detected")
         print("3")
+        start = time.time()
         frame = take_photo()
         if frame is None:
             return
 
         print("4")
         result = upload_image(frame)
+        end = time.time()
+        print(f"[DEBUG] Elapsed time: {end - start:.6f} seconds")
         print("5")
         if result and "ID" in result:
             print("6")

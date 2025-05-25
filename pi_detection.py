@@ -31,7 +31,13 @@ SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(IR_PIN, GPIO.OUT)
+pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
 
+pwm.ChangeDutyCycle(DUTY_CYCLE)
+print("IR's on")
+time.sleep(3)
+pwm.ChangeDutyCycle(DUTY_CYCLE)
+print("IR's off")
 
 def compress_video(input_path, output_path):
     subprocess.run([
@@ -166,7 +172,9 @@ def uploadToStream(frame):
 def on_PIR():
     global triggered, picam2
     #set_ir_led_state()
+    print("Turning On IR Emitters")
     pwm.ChangeDutyCycle(DUTY_CYCLE)  # Turn ON with reduced duty
+    
     print("2")
     try:
         clear_Oled()
@@ -251,7 +259,7 @@ def get_IR_state():
         ir_response = requests.get(f"{SERVER_URL}/get_ir_state")
         if ir_response.status_code == 200:
             IR_STATE = ir_response.json().get("ir_state", False)
-            print(f"Updated IR_STATE: {IR_STATE}")
+            #print(f"Updated IR_STATE: {IR_STATE}")
         else:
             print(f"Failed to get IR state. Status code: {ir_response.status_code}")
     except requests.RequestException as e:

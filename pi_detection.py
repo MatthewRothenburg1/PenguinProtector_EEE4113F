@@ -311,19 +311,6 @@ textToOled("Starting up...")
 
 print("Oled Initialised")
 
-clear_Oled()
-textToOled("Server\nConnected")
-time.sleep(10)
-clear_Oled()
-textToOled("Rebooting...")
-time.sleep(10)
-clear_Oled()
-textToOled("Picture Uploaded Successfully")
-time.sleep(10)
-clear_Oled()
-textToOled("Video Uploaded Successfully")
-time.sleep(10)
-
 
 # === GPIO Setup ===
 GPIO.setmode(GPIO.BCM)

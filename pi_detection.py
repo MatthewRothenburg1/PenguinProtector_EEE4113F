@@ -35,7 +35,7 @@ pwm = GPIO.PWM(IR_PIN, PWM_FREQ)
 
 pwm.ChangeDutyCycle(DUTY_CYCLE)
 print("IR's on")
-sleep(3)
+time.sleep(3)
 pwm.ChangeDutyCycle(DUTY_CYCLE)
 print("IR's off")
 

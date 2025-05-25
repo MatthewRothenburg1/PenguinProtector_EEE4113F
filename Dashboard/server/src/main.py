@@ -258,11 +258,19 @@ def evaluate_vision_response(response):
     # You can implement your logic here based on the response from Google Vision API
     for obj in response:
         # Check if the object is 'Person' and if the score is greater than 0.5
-        if obj.name == 'Person' and obj.score > 0.5:
-            return True
+        #if obj.name == 'Person' and obj.score > 0.5:
+        #    return True
         if obj.name == 'Animal' and obj.score > 0.3:
             return True
+        if obj.name == 'Bear' and obj.score > 0.3:
+            return True
         if obj.name == 'Cat' and obj.score > 0.3:
+            return True
+        if obj.name == 'Lynx' and obj.score > 0.3:
+            return True
+        if obj.name == 'Leopard' and obj.score > 0.3:
+            return True
+        if obj.name == 'Jaguar' and obj.score > 0.3:
             return True
         
     # If no matching 'Person' with score > 0.5, return False
@@ -363,6 +371,8 @@ def upload_video_and_detterent_to_sheets(ID,  deterrent, video_link):
     except Exception as e:
         print(f"Error updating Sheets: {e}")
 
+def extract_objects_from_response(objects):
+    return [obj.name for obj in objects]
 
 
 ###############################################################################################
@@ -391,8 +401,9 @@ async def upload_to_vision(file: UploadFile = File(...), background_tasks: Backg
         response = upload_image_to_vision(file_bytes) #Upload the captured image to Google Vision API and store the response
         
         results = evaluate_vision_response(response) #Evaluate the response to check validity (Results = True if honeybadger/leopard)
-
-        background_tasks.add_task(on_detection, file_bytes, results, ID) #If a person is detected, start the background task (upload to Google Drive, send Telegram message, etc.)
+        objects = extract_objects_from_response(response)  # Extract object names from the response
+        object_text = ', '.join(objects)
+        background_tasks.add_task(on_detection, file_bytes, object_text, ID) #If a person is detected, start the background task (upload to Google Drive, send Telegram message, etc.)
         
         return {"detection": results, "ID": ID}  #Return the results and the ID of the upload to the Raspberry PI
     

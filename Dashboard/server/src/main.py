@@ -72,10 +72,10 @@ telegram_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
 
 # Service account credentials
 creds = service_account.Credentials.from_service_account_file(
-    'design-dashboard-eee4113f-0fab4abb4b04.json',
+    'design-dashboard-eee4113f-2bf7812c5df9.json',
     scopes=['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/spreadsheets']  # Correct scope for Drive access
 )
-creds2 = credentials.Certificate('design-dashboard-eee4113f-0fab4abb4b04.json')
+creds2 = credentials.Certificate('design-dashboard-eee4113f-f2f1c03117cc.json')
 
 firebase_admin.initialize_app(creds2, {
     'databaseURL': 'https://design-dashboard-eee4113f-default-rtdb.firebaseio.com'
@@ -270,13 +270,13 @@ def evaluate_vision_response(response):
             return True
         if obj.name == 'Leopard' and obj.score > 0.3:
             return True
-        if obj.name == 'Jaguar' and obj.score > 0.3:
+        if obj.name == 'Leopard' and obj.score > 0.3:
             return True
         
     # If no matching 'Person' with score > 0.5, return False
     return False
 
-def on_detection(file_bytes: BytesIO, results, ID):
+def on_detection(file_bytes: BytesIO, results,response, ID):
     
     if(results): 
         send_photo_to_user(file_bytes, "Honey Badger!!! Activating Penguin Protector. May need backup.") #If the detction state is true send a notification to the user over telegram.
@@ -284,7 +284,7 @@ def on_detection(file_bytes: BytesIO, results, ID):
     photo_drive_link =   upload_to_drive(file_bytes, ID +'.jpg') #Upload the image to Google Drive and store the link
     local_time = datetime.now(ZoneInfo("Africa/Johannesburg")).replace(microsecond=0)
     detection_time = local_time.replace(tzinfo=None).isoformat()
-    upload_time_and_ID_to_sheets(ID, detection_time, results, photo_drive_link) #Upload the time and ID to Google Sheets
+    upload_time_and_ID_to_sheets(ID, detection_time, results,response, photo_drive_link) #Upload the time and ID to Google Sheets
     return
 
 def send_message_to_user(message):
@@ -313,13 +313,13 @@ def send_photo_to_user(photo: BytesIO, caption: str = ''):
     else:
         print(f"Failed to send photo. Error: {response.text}")
 
-def upload_time_and_ID_to_sheets(ID, time_taken, results, photo_link, max_retries=3, delay=2):
-    sheet_range = 'Sheet1!A:D'  # Sheet name and columns A to D
+def upload_time_and_ID_to_sheets(ID, time_taken, results, response, photo_link, max_retries=3, delay=2):
+    sheet_range = 'Sheet1!A:E'  # Sheet name and columns A to D
 
     # Prepare the data row to append
     # 'results' is a boolean — we store "Detection" or "No Detection"
     values = [
-        [ID, time_taken, results, photo_link]
+        [ID, time_taken, results, response, photo_link]
     ]
 
     body = {
@@ -356,7 +356,7 @@ def upload_video_and_detterent_to_sheets(ID,  deterrent, video_link):
         for i, row in enumerate(values):
             if row and row[0] == ID:
                 row_number = i + 1  # Convert zero-based index to 1-based for Sheets
-                update_range = f'Sheet1!E{row_number}:F{row_number}'
+                update_range = f'Sheet1!F{row_number}:G{row_number}'
                 body = {
                     'values': [[deterrent, video_link]]
                 }
@@ -403,7 +403,7 @@ async def upload_to_vision(file: UploadFile = File(...), background_tasks: Backg
         results = evaluate_vision_response(response) #Evaluate the response to check validity (Results = True if honeybadger/leopard)
         objects = extract_objects_from_response(response)  # Extract object names from the response
         object_text = ', '.join(objects)
-        background_tasks.add_task(on_detection, file_bytes, object_text, ID) #If a person is detected, start the background task (upload to Google Drive, send Telegram message, etc.)
+        background_tasks.add_task(on_detection, file_bytes, results, object_text, ID) #If a person is detected, start the background task (upload to Google Drive, send Telegram message, etc.)
         
         return {"detection": results, "ID": ID}  #Return the results and the ID of the upload to the Raspberry PI
     

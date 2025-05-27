@@ -435,7 +435,7 @@ try:
                 else:
                     for i in range(8):
                         clear_Oled()
-                        textToOled("Arming" + i)
+                        textToOled("Arming " + str(i))
                         time.sleep(1)
                     prev_detection_time = current_time
                     STATE = State.ARMED

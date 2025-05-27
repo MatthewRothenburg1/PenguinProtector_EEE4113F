@@ -60,9 +60,11 @@ def get_network_info():
 
 # === Deterrent Stub ===
 def deterrent():
+    clear_Oled()
+    textToOled("Deterrent \nTriggered")   
     print("Deterrent triggered!")
     start_time = current_time
-    while time.time() - start_time < 5:  # Deterrent for 5 seconds
+    while time.time() - start_time < 10:  # Deterrent for 5 seconds
         print("Deterrent active...")
 
     return 

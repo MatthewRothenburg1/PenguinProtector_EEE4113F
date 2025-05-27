@@ -425,13 +425,12 @@ try:
 
         if GPIO.input(BUTTON_PIN) == GPIO.LOW:
             if(STATE == State.IDLE):
-                time.sleep(1)  # Debounce delay
+                time.sleep(5)  # Debounce delay
                 if(GPIO.input(BUTTON_PIN) == GPIO.LOW):
                     clear_Oled()
                     textToOled("Resetting")
                     subprocess.run(["sudo", "reboot"])
                 else:
-                    
                     for i in range(5):
                         clear_Oled()
                         textToOled("Arming" + "."*i)

@@ -365,14 +365,14 @@ try:
         current_time = time.time()
         if(STATE == State.IDLE):
             clear_Oled()
-            if current_time - idle_rotation_time > 2:
+            if current_time - idle_rotation_time < 2:
                 clear_Oled()
                 textToOled(get_network_info())
-            elif current_time - idle_rotation_time > 4:
+            elif current_time - idle_rotation_time < 4:
                 clear_Oled()
                 textToOled("Hold Button \nto Reset")
             
-            elif current_time - idle_rotation_time > 6:
+            elif current_time - idle_rotation_time < 6:
                 clear_Oled()
                 textToOled("Press Button to Arm")
                 idle_rotation_time = current_time

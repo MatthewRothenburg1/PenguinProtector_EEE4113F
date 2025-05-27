@@ -375,6 +375,7 @@ try:
             elif current_time - idle_rotation_time < 6:
                 clear_Oled()
                 textToOled("Press Button to Arm")
+            else:
                 idle_rotation_time = current_time
 
         elif(STATE == State.ARMED):

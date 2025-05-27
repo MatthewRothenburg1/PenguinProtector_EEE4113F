@@ -427,7 +427,7 @@ try:
             if(STATE == State.IDLE):
                 clear_Oled()
                 textToOled("Button Pressed \n hold to Reset")
-                time.sleep(5)  # Debounce delay
+                time.sleep(10)  # Debounce delay
                 if(GPIO.input(BUTTON_PIN) == GPIO.LOW):
                     clear_Oled()
                     textToOled("Resetting")

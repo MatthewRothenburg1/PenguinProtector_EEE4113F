@@ -15,12 +15,36 @@ fetch(`${url}detection_stats`)
   })
   .then(data => {
     detectionStats = data;
+    console.log("Fetched detection stats:", detectionStats); // Log the full data
     updateStatsDisplay();  // Show initial stats right after fetch
   })
   .catch(error => {
     console.error("Error fetching detection stats:", error);
     document.getElementById("stats-display").textContent = "Failed to load stats";
   });
+
+fetch(`${url}get_interaction_time`)
+  .then(response => {
+    if (!response.ok) throw new Error("Failed to fetch interaction time");
+    return response.json();
+  })
+  .then(data => {
+    console.log("Fetched interaction data:", data);
+
+    if (data.interaction_time && data.time_passed) {
+      document.getElementById("last-interaction").textContent = data.interaction_time;
+      document.getElementById("time-since-last-interaction").textContent = data.time_passed;
+    } else {
+      document.getElementById("last-interaction").textContent = "No data";
+      document.getElementById("time-since-last-interaction").textContent = "N/A";
+    }
+  })
+  .catch(error => {
+    console.error("Error fetching interaction time:", error);
+    document.getElementById("last-interaction").textContent = "Error";
+    document.getElementById("time-since-last-interaction").textContent = "Error";
+  });
+
 
 // Function to update displayed stats based on dropdown selection
 function updateStatsDisplay() {

@@ -509,7 +509,6 @@ async def generate_from_memory():
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    update_interaction_time()  # Update interaction time on page load
     return templates.TemplateResponse("index.html", {"request": request})
 
 # Coordinates for sunrise-sunset API

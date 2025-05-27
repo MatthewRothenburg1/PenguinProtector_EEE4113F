@@ -63,10 +63,7 @@ def deterrent():
     clear_Oled()
     textToOled("Deterrent \nTriggered")   
     print("Deterrent triggered!")
-    start_time = current_time
-    while time.time() - start_time < 10:  # Deterrent for 5 seconds
-        print("Deterrent active...")
-
+    time.sleep(10)  # Simulate deterrent action
     return 
 
 #Take photo

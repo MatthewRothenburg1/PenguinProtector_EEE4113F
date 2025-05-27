@@ -365,14 +365,14 @@ try:
         current_time = time.time()
         if(STATE == State.IDLE):
             clear_Oled()
-            if current_time - idle_rotation_time < 2:
+            if current_time - idle_rotation_time < 4:
                 clear_Oled()
                 textToOled(get_network_info())
-            elif current_time - idle_rotation_time < 4:
+            elif current_time - idle_rotation_time < 8:
                 clear_Oled()
                 textToOled("Hold Button \nto Reset")
             
-            elif current_time - idle_rotation_time < 6:
+            elif current_time - idle_rotation_time < 12:
                 clear_Oled()
                 textToOled("Press Button to Arm")
             else:
@@ -381,7 +381,7 @@ try:
         elif(STATE == State.ARMED):
             clear_Oled()
             textToOled("Armed")
-            if(current_time - prev_detection_time > 10):
+            if(current_time - prev_detection_time > 20):
                 if(GPIO.input(PIR_PIN) == GPIO.HIGH):
                     on_PIR()
                     prev_detection_time = current_time

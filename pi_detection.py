@@ -13,7 +13,7 @@ import threading
 from luma.core.interface.serial import i2c
 from luma.oled.device import ssd1306
 from PIL import Image, ImageDraw, ImageFont
-
+from enum import Enum
 
 # === Configuration ===
 PIR_PIN = 22
@@ -23,15 +23,15 @@ PWM_FREQ = 2000          # 2kHz
 DUTY_CYCLE = 100 
 SERVER_POLL_TIME = 0.5
 
-
+class State(Enum):
+    IDLE = 1
+    ARMED = 2
+    STREAMING = 3
 
 
 #SERVER_URL = "http://196.24.171.25:8080"  # Local testing server
 #SERVER_URL = "http://192.168.3.185:8080"  #Josh Local Server
 SERVER_URL = "https://flask-fire-837838013707.africa-south1.run.app"  # For deployments
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(IR_PIN, GPIO.OUT)
-
 
 
 def compress_video(input_path, output_path):
@@ -61,6 +61,11 @@ def get_network_info():
 # === Deterrent Stub ===
 def deterrent():
     print("Deterrent triggered!")
+    start_time = current_time
+    while time.time() - start_time < 5:  # Deterrent for 5 seconds
+        print("Deterrent active...")
+
+    return 
 
 #Take photo
 def take_photo():
@@ -213,7 +218,7 @@ def on_PIR():
                     picam2.start_recording(encoder, output)
                     clear_Oled()
                     textToOled("Taking Video")
-                    time.sleep(5)
+                    deterrent()
                     picam2.stop_recording()
                     # Always turn off IR LEDs after motion event
                     pwm.ChangeDutyCycle(0)
@@ -346,68 +351,60 @@ prev_time_ir_check = 0
 prev_detection_time = 0
 IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
 
-
-while(GPIO.input(BUTTON_PIN) == GPIO.HIGH):
-    clear_Oled()
-    network_info = get_network_info()
-    textToOled(network_info + "."*dots + "\nPress Button to Arm")
-    dots = (dots + 1) % 4  # Cycle from 0 to 3
-    print(network_info)
-    time.sleep(0.5)
-    current_time = time.time()
-    if(current_time - prev_time_stream > 5):
-        stream_state = fetchStreamState()
-        print(stream_state)
-        if stream_state is True:
-            STREAM_START_TIME = current_time
-        dots = 0
-        brightness = 0
-        fps_time = 0
-        fps = 0
-        while(stream_state):
-            clear_Oled()
-            textToOled("Streaming" + dots*".")
-            # Turn on IR LEDs if it's dark
-            set_ir_led_state()
-            dots = (dots + 1) % 3
-            current_time = time.time()
-            stream_state = fetchStreamState()
-            fps = fps + 1
-            if(current_time - fps_time > 1):
-                print(f"FPS: {fps}")
-                fps_time = current_time
-                fps = 0
-            if(current_time - STREAM_START_TIME > 40):
-                clear_Oled()
-                setStreamState(SERVER_URL,False)
-                pwm.ChangeDutyCycle(0)
-            frame = take_photo()
-            uploadToStream(frame)
-        prev_time_stream = current_time 
-
+STATE = State.IDLE
+PREV_STATE = State.IDLE
 
 textToOled("Starting Detction")
 time.sleep(0.5)
 
-for i in range(10):
-    clear_Oled()
-    textToOled("Arming in " + str(10-i))
-    time.sleep(1)
-
+idle_rotation_time = 0
 
 try:
     while True:
-
         current_time = time.time()
-        clear_Oled()
-        textToOled("ARMED\n" + dots*".")
-        dots = (dots + 1) % 10  # Cycle from 0 to 3
-        if(current_time - prev_detection_time > 10):
-            if(GPIO.input(PIR_PIN) == GPIO.HIGH):
-                print("1")
-                on_PIR()
-                print("done")
-                prev_detection_time = current_time
+        if(STATE == State.IDLE):
+            clear_Oled()
+            if current_time - idle_rotation_time > 2:
+                clear_Oled()
+                textToOled(get_network_info())
+            elif current_time - idle_rotation_time > 4:
+                clear_Oled()
+                textToOled("Hold Button \nto Reset")
+            
+            elif current_time - idle_rotation_time > 6:
+                clear_Oled()
+                textToOled("Press Button to Arm")
+                idle_rotation_time = current_time
+
+        elif(STATE == State.ARMED):
+            clear_Oled()
+            textToOled("Armed")
+            if(current_time - prev_detection_time > 10):
+                if(GPIO.input(PIR_PIN) == GPIO.HIGH):
+                    on_PIR()
+                    prev_detection_time = current_time
+        
+
+        elif(STATE == State.STREAMING):
+            dots = 0
+            while(STATE == State.STREAMING):
+                clear_Oled()
+                textToOled("Streaming" + dots*".")
+                # Turn on IR LEDs if it's dark
+                set_ir_led_state()
+                dots = (dots + 1) % 3
+                current_time = time.time()
+                stream_state = fetchStreamState()
+    
+                frame = take_photo()
+                uploadToStream(frame)
+
+                if(current_time - STREAM_START_TIME > 200):
+                    clear_Oled()
+                    setStreamState(SERVER_URL,False)
+                    pwm.ChangeDutyCycle(0)
+                    STATE = PREV_STATE
+                
         # Check if it's time to update the IR state
         if current_time - prev_time_ir_check > IR_CHECK_INTERVAL:
             get_IR_state()
@@ -419,31 +416,31 @@ try:
             print(stream_state)
             if stream_state is True:
                 STREAM_START_TIME = current_time
-            dots = 0
-            fps_time = 0
-            fps = 0
-            while(stream_state):
-                clear_Oled()
-                textToOled("Streaming" + dots*".")
-                # Turn on IR LEDs if it's dark
-                set_ir_led_state()
-                dots = (dots + 1) % 3
-                current_time = time.time()
-                stream_state = fetchStreamState()
-                fps = fps + 1
-                if(current_time - fps_time > 1):
-                    print(f"FPS: {fps}")
-                    fps_time = current_time
-                    fps = 0
-                    
-                if(current_time - STREAM_START_TIME > 200):
-                    clear_Oled()
-                    setStreamState(SERVER_URL,False)
-                    pwm.ChangeDutyCycle(0)
-                frame = take_photo()
-                uploadToStream(frame)
+                PREV_STATE = STATE
+                STATE = State.STREAMING            
             prev_time_stream = current_time
-        time.sleep(1)
+
+        if GPIO.input(BUTTON_PIN) == GPIO.LOW:
+            if(STATE == State.IDLE):
+                time.sleep(1)  # Debounce delay
+                if(GPIO.input(BUTTON_PIN) == GPIO.LOW):
+                    clear_Oled()
+                    textToOled("Resetting")
+                    subprocess.run(["sudo", "reboot"])
+                else:
+                    
+                    for i in range(5):
+                        clear_Oled()
+                        textToOled("Arming" + "."*i)
+                        time.sleep(0.5)
+                    STATE = State.ARMED
+            elif(STATE == State.ARMED):
+                clear_Oled()
+                textToOled("Disarming")
+                time.sleep(1)
+                STATE = State.IDLE
+                                
+        time.sleep(0.2)
 
 
             

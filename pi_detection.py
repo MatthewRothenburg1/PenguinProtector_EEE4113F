@@ -338,8 +338,9 @@ video_config = picam2.create_video_configuration()
 picam2.configure(still_config)
 picam2.start()
 time.sleep(1)  # Warm-up
+clear_Oled()
 textToOled("Camera Initialised")
-oled_screen.clear()
+clear_Oled()
 time.sleep(0.5)
 
 prev_time_stream = 0
@@ -381,7 +382,7 @@ try:
         elif(STATE == State.ARMED):
             clear_Oled()
             textToOled("Armed")
-            if(current_time - prev_detection_time > 20):
+            if(current_time - prev_detection_time > 30):
                 if(GPIO.input(PIR_PIN) == GPIO.HIGH):
                     on_PIR()
                     prev_detection_time = current_time
@@ -431,10 +432,11 @@ try:
                     textToOled("Resetting")
                     subprocess.run(["sudo", "reboot"])
                 else:
-                    for i in range(5):
+                    for i in range(8):
                         clear_Oled()
-                        textToOled("Arming" + "."*i)
-                        time.sleep(0.5)
+                        textToOled("Arming" + i)
+                        time.sleep(1)
+                    prev_detection_time = current_time
                     STATE = State.ARMED
             elif(STATE == State.ARMED):
                 clear_Oled()
@@ -442,7 +444,7 @@ try:
                 time.sleep(1)
                 STATE = State.IDLE
                                 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 
             

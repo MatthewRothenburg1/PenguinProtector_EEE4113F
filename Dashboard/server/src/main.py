@@ -253,6 +253,29 @@ def set_streaming_state(x):
     ref = db.reference('/StreamingState')
     ref.set(x)
 
+def update_interaction_time():
+    ref = db.reference('/InteractionTime')
+    current_time = datetime.now(ZoneInfo("Africa/Johannesburg")).replace(microsecond=0).isoformat()
+    ref.set(current_time)
+
+def get_interaction_time_and_delta():
+    ref = db.reference('/InteractionTime')
+    interaction_time_str = ref.get()
+
+    if interaction_time_str:
+        # Parse stored time
+        interaction_time = datetime.fromisoformat(interaction_time_str).astimezone(ZoneInfo("Africa/Johannesburg"))
+
+        # Get current time
+        current_time = datetime.now(ZoneInfo("Africa/Johannesburg"))
+
+        # Calculate time difference
+        time_passed = current_time - interaction_time
+
+        return interaction_time, time_passed
+    else:
+        return None, None
+
 def evaluate_vision_response(response):
     # Placeholder for evaluating the vision response
     # You can implement your logic here based on the response from Google Vision API
@@ -437,6 +460,7 @@ async def upload_video(
 
 @app.get("/get_streaming_state")
 def get_detect():
+    update_interaction_time()
     return get_streaming_state()
 
 
@@ -444,17 +468,31 @@ def get_detect():
 def set_streaming_state_endpoint(value: bool = Query(...)):
     return set_streaming_state(value)
 
+@app.get("/get_interaction_time")
+def get_interaction_time():
+    interaction_time, time_passed = get_interaction_time_and_delta()
+    time_passed_str = str(time_passed).split('.')[0]
+    if interaction_time:
+        return {
+            "interaction_time": interaction_time.isoformat().split('+')[0],
+            "time_passed": str(time_passed_str)
+        }
+    else:
+        return {"error": "No interaction time found."}
+
 
 @app.post("/upload_to_stream")
 async def upload_frame(file: UploadFile = File(...)):
     global latest_frame, frame_event
     latest_frame = BytesIO(await file.read())
     frame_event.set()
-    return {"status": "Frame received"}
+    return {"status": "Frame received"} 
 
 @app.get("/video_feed")
 async def video_feed():
     return StreamingResponse(generate_from_memory(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
 
 
 async def generate_from_memory():
@@ -471,6 +509,7 @@ async def generate_from_memory():
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    update_interaction_time()  # Update interaction time on page load
     return templates.TemplateResponse("index.html", {"request": request})
 
 # Coordinates for sunrise-sunset API

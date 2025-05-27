@@ -355,7 +355,6 @@ IR_CHECK_INTERVAL = 5  # 30 minutes in seconds
 STATE = State.IDLE
 PREV_STATE = State.IDLE
 
-textToOled("Starting Detction")
 time.sleep(0.5)
 
 idle_rotation_time = 0
@@ -426,6 +425,8 @@ try:
 
         if GPIO.input(BUTTON_PIN) == GPIO.LOW:
             if(STATE == State.IDLE):
+                clear_Oled()
+                textToOled("Button Pressed \n hold to Reset")
                 time.sleep(5)  # Debounce delay
                 if(GPIO.input(BUTTON_PIN) == GPIO.LOW):
                     clear_Oled()

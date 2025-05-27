@@ -361,6 +361,7 @@ idle_rotation_time = 0
 
 try:
     while True:
+        print(STATE)
         current_time = time.time()
         if(STATE == State.IDLE):
             clear_Oled()
@@ -395,7 +396,8 @@ try:
                 dots = (dots + 1) % 3
                 current_time = time.time()
                 stream_state = fetchStreamState()
-    
+                if(not stream_state):
+                    STATE = PREV_STATE
                 frame = take_photo()
                 uploadToStream(frame)
 
@@ -403,7 +405,7 @@ try:
                     clear_Oled()
                     setStreamState(SERVER_URL,False)
                     pwm.ChangeDutyCycle(0)
-                    STATE = PREV_STATE
+                    
                 
         # Check if it's time to update the IR state
         if current_time - prev_time_ir_check > IR_CHECK_INTERVAL:
